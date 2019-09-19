@@ -1,0 +1,7 @@
+.vs
+Temp
+Library
+obj
+*.*proj
+*.sln
+debug.log
