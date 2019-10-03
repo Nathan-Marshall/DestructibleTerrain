@@ -28,21 +28,7 @@ public class DestructibleObject : MonoBehaviour
 
     // Non-static
 
-    public DTPolygon dtPolygon = new DTPolygon(
-        new List<Vector2> {
-            new Vector2(-1, -1),
-            new Vector2(-1,  1),
-            new Vector2( 1,  1),
-            new Vector2( 1, -1)
-        },
-        new List<List<Vector2>> {
-            new List<Vector2> {
-                new Vector2(-0.75f, -0.75f),
-                new Vector2( 0.75f, -0.75f),
-                new Vector2( 0.75f,  0.75f),
-                new Vector2(-0.75f,  0.75f)
-            }
-        });
+    private DTPolygon dtPolygon;
 
     private DTMesh dtMesh;
 
@@ -50,7 +36,24 @@ public class DestructibleObject : MonoBehaviour
         tag = DestructibleObjectTag;
         GetComponent<Rigidbody2D>().useAutoMass = true;
 
-        ApplyPolygon(dtPolygon);
+        // Assign default polygon when this component is attached in the editor
+        if (dtPolygon == null && Application.isEditor) {
+            ApplyPolygon(new DTPolygon(
+                new List<Vector2> {
+                new Vector2(-1, -1),
+                new Vector2(-1,  1),
+                new Vector2( 1,  1),
+                new Vector2( 1, -1)
+                },
+                new List<List<Vector2>> {
+                new List<Vector2> {
+                    new Vector2(-0.75f, -0.75f),
+                    new Vector2( 0.75f, -0.75f),
+                    new Vector2( 0.75f,  0.75f),
+                    new Vector2(-0.75f,  0.75f)
+                }
+                }));
+        }
     }
 
     public DTPolygon GetTransformedPolygon() {
@@ -64,6 +67,10 @@ public class DestructibleObject : MonoBehaviour
     }
 
     public void ApplyPolygon(DTPolygon dtPolygon) {
+        if (this.dtPolygon == dtPolygon) {
+            return;
+        }
+
         this.dtPolygon = dtPolygon;
 
         // Collider from polygon
