@@ -13,7 +13,6 @@ public class Explosion
     public Vector2 Position { get; private set; }
     public float Radius { get; private set; }
     public DTPolygon DTPolygon { get; private set; }
-    public DTMesh DTMesh { get; private set; }
 
     public Explosion(float x, float y, float radius, int numPoints) {
         Position = new Vector2(x, y);
@@ -27,6 +26,5 @@ public class Explosion
         }
 
         DTPolygon = new DTPolygon(circle);
-        //DTMesh = TriangleNetAdapter.Instance.Triangulate(DTPolygon);
     }
 }

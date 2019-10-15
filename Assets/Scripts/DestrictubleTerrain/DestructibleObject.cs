@@ -77,7 +77,7 @@ public class DestructibleObject : MonoBehaviour
         ApplyCollider(dtPolygon);
 
         // Triangulate polygon
-        dtMesh = TriangleNetAdapter.Instance.Triangulate(dtPolygon);
+        dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
 
         // Create mesh from triangles
         ApplyMesh(dtMesh);

@@ -8,6 +8,8 @@ namespace DestrictubleTerrain.Triangulation
 {
     public interface ITriangulator
     {
-        DTMesh Triangulate(DTPolygon subject);
+        DTMesh PolygonToMesh(DTPolygon subject);
+
+        IList<DTPolygon> PolygonToTriangleList(DTPolygon subject);
     }
 }

@@ -21,7 +21,7 @@ namespace DestrictubleTerrain.Triangulation
 
         private TriangleNetAdapter() { }
 
-        public DTMesh Triangulate(DTPolygon subject) {
+        public DTMesh PolygonToMesh(DTPolygon subject) {
             // Format polygon input and execute
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
@@ -34,6 +34,10 @@ namespace DestrictubleTerrain.Triangulation
             List<Vector2> vertices = triangleNetOutput.Vertices.ToVector2List();
             List<List<int>> triangles = triangleNetOutput.Triangles.ToPartitionList();
             return new DTMesh(vertices, triangles);
+        }
+
+        public IList<DTPolygon> PolygonToTriangleList(DTPolygon subject) {
+            throw new NotImplementedException();/////////////////////////////////////////////////////////////////////////////////////////////////
         }
     }
 
