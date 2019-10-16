@@ -172,11 +172,11 @@ namespace DestrictubleTerrain.Clipping
     {
         private const long FixedDecimalConversion = 10000000;
 
-        public static IntPoint ToIntPoint(Vector2 p) {
+        public static IntPoint ToIntPoint(this Vector2 p) {
             return new IntPoint(p.x * FixedDecimalConversion, p.y * FixedDecimalConversion);
         }
 
-        public static Vector2 ToVector2(IntPoint p) {
+        public static Vector2 ToVector2(this IntPoint p) {
             return new Vector2(p.X / (float)FixedDecimalConversion, p.Y / (float)FixedDecimalConversion);
         }
 

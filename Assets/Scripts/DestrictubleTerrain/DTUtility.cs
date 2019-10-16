@@ -1,4 +1,6 @@
-﻿using DestrictubleTerrain;
+﻿using ClipperLib;
+using DestrictubleTerrain;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,5 +41,39 @@ public static class DTUtility
 
     public static IList<DTPolygon> MeshToPolygonList(DTMesh mesh) {
         return mesh.Partitions.Select(part => new DTPolygon(part.Select(i => mesh.Vertices[i]).ToList())).ToList();
+    }
+
+    // Assumes no holes in polygons
+    public static DTMesh SimplePolygonListToMesh(IList<DTPolygon> polygons) {
+        const long FixedDecimalConversion = 100000;
+
+        IntPoint ToIntPoint(Vector2 p) {
+            return new IntPoint(p.x * FixedDecimalConversion, p.y * FixedDecimalConversion);
+        }
+
+        Dictionary<IntPoint, int> vertexMap = new Dictionary<IntPoint, int>();
+        List<Vector2> vertices = new List<Vector2>();
+        foreach (var poly in polygons) {
+            // Assume no holes
+            foreach (var v in poly.Contour) {
+                try {
+                    // Add the vertex only if it has not already been added
+                    vertexMap.Add(ToIntPoint(v), vertices.Count);
+                    vertices.Add(v);
+                } catch (ArgumentException) { }
+            }
+        }
+
+        List<List<int>> partitions = new List<List<int>>(polygons.Count);
+        foreach (var poly in polygons) {
+            List<int> indices = new List<int>();
+            // Assume no holes
+            foreach (var v in poly.Contour) {
+                indices.Add(vertexMap[ToIntPoint(v)]);
+            }
+            partitions.Add(indices);
+        }
+
+        return new DTMesh(vertices, partitions);
     }
 }
