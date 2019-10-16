@@ -15,6 +15,6 @@ namespace DestrictubleTerrain.Clipping
         // Takes a list of subject polygon groups and subtracts clipping polygons from it.
         // Returns a list of lists of modified subject polygon groups. Each list of polygon groups corresponds with one polygon group from the subjectGroups input,
         // and contains one or more polygon groups depending on whether any part the original polygon group gets completely divided from the rest.
-        IList<List<List<DTPolygon>>> Subtract(IEnumerable<IEnumerable<DTPolygon>> subjectGroups, IEnumerable<DTPolygon> clippingPolygons);
+        IList<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> subjectGroups, IEnumerable<DTPolygon> clippingPolygons);
     }
 }

@@ -8,9 +8,12 @@ using UnityEngine;
 
 namespace DestrictubleTerrain.ExplosionExecution
 {
+    // This class simply iterates all explosions and all polygons in O(n^2) time subtracting a single explosion from a
+    // single polygon at a time, but does bounds checking to skip processing most polygons.
     public sealed class IterativeExplosionExecutor : IExplosionExecutor
     {
-        private static readonly Lazy<IterativeExplosionExecutor> lazyInstance = new Lazy<IterativeExplosionExecutor>(() => new IterativeExplosionExecutor());
+        private static readonly Lazy<IterativeExplosionExecutor> lazyInstance =
+            new Lazy<IterativeExplosionExecutor>(() => new IterativeExplosionExecutor());
 
         // Singleton intance
         public static IterativeExplosionExecutor Instance {
@@ -31,7 +34,14 @@ namespace DestrictubleTerrain.ExplosionExecution
                     DestructibleObject dtObj = dtObjectList[i];
 
                     // Do basic AABB-circle check to see whether we can skip processing this destructible object with this explosion
-                    if (!BoundsCheck(dtObj, exp)) {
+                    int bc = BoundsCheck(dtObj, exp);
+                    if (bc == -1) {
+                        // Object is not affected by explosion
+                        continue;
+                    } else if (bc == 1) {
+                        // Object is completely removed by explosion
+                        dtObjectList.RemoveAt(i--);
+                        UnityEngine.Object.Destroy(dtObj.gameObject);
                         continue;
                     }
 
@@ -43,6 +53,7 @@ namespace DestrictubleTerrain.ExplosionExecution
                         // If no output polygons, remove the current destrucible object
                         dtObjectList.RemoveAt(i--);
                         UnityEngine.Object.Destroy(dtObj.gameObject);
+                        continue;
                     } else {
                         // Otherwise apply the output polygons (fragments) to GameObjects (new or reused)
                         foreach (DTPolygon poly in result) {
@@ -56,9 +67,11 @@ namespace DestrictubleTerrain.ExplosionExecution
 
                                 // Add it to the objectList, but not until after finished processing this explosion
                                 pendingAdditions.Add(newObj);
+                                continue;
                             } else {
                                 // Reuse the existing GameObject by applying the new clipped polygon to it
                                 dtObj.ApplyTransformedPolygon(poly);
+                                continue;
                             }
                         }
                     }
@@ -69,10 +82,35 @@ namespace DestrictubleTerrain.ExplosionExecution
             }
         }
 
-        private static bool BoundsCheck(DestructibleObject dtObj, Explosion exp) {
+        // -1 means the object bounds are completely outside the explosion.
+        // 0 means the bounds intersect.
+        // 1 means the object bounds are completely inside the explosion.
+        private static int BoundsCheck(DestructibleObject dtObj, Explosion exp) {
             Bounds oBounds = dtObj.GetComponent<Collider2D>().bounds;
             Vector3 ePos = new Vector3(exp.Position.x, exp.Position.y);
-            return (oBounds.ClosestPoint(ePos) - ePos).sqrMagnitude < exp.Radius * exp.Radius;
+            float radSq = exp.Radius * exp.Radius;
+
+            // Completely outside
+            if ((oBounds.ClosestPoint(ePos) - ePos).sqrMagnitude >= radSq) {
+                return -1;
+            }
+
+            // Compute furthest point
+            Vector3 furthestPoint = new Vector3(oBounds.min.x, oBounds.min.y, 0);
+            if (oBounds.center.x > ePos.x) {
+                furthestPoint.x = oBounds.max.x;
+            }
+            if (oBounds.center.y > ePos.y) {
+                furthestPoint.y = oBounds.max.y;
+            }
+
+            // Completely inside
+            if ((furthestPoint - ePos).sqrMagnitude <= radSq) {
+                return 1;
+            }
+
+            // Bounds intersect
+            return 0;
         }
     }
 }

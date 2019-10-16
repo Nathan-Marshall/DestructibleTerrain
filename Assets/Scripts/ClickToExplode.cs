@@ -16,7 +16,7 @@ public class ClickToExplode : MonoBehaviour
 
             List<Explosion> explosions = new List<Explosion> {
                 new Explosion(worldPoint.x - 0.3f, worldPoint.y, 0.5f, 24),
-                new Explosion(worldPoint.x, worldPoint.y, 10.5f, 24),
+                new Explosion(worldPoint.x, worldPoint.y, 0.5f, 24),
                 new Explosion(worldPoint.x + 0.3f, worldPoint.y, 0.5f, 24)
             };
 

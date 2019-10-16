@@ -9,7 +9,8 @@ using UnityEngine.Assertions;
 
 namespace DestrictubleTerrain.Clipping
 {
-    public sealed class ClipperAdapter : IPolygonSubtractor {
+    public sealed class ClipperAdapter : IPolygonSubtractor
+    {
         private static readonly Lazy<ClipperAdapter> lazyInstance = new Lazy<ClipperAdapter>(() => new ClipperAdapter());
 
         // Singleton intance
@@ -53,37 +54,39 @@ namespace DestrictubleTerrain.Clipping
             return output;
         }
 
-        public IList<List<List<DTPolygon>>> Subtract(IEnumerable<IEnumerable<DTPolygon>> subjectGroups, IEnumerable<DTPolygon> clippingPolygons) {
+        // WARNING: This implementation is currently very volatile and can cause multiple input polygon groups to fuse
+        // together if a vertex from one is very close to the vertex of another.
+        public IList<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
             clipper.Clear();
 
-            // Keep a list of point sets that correspond to each input group, to identify output polygons with respect to input polygon groups
-            List<HashSet<IntPoint>> inputPointGroups = new List<HashSet<IntPoint>>();
+            // Map the points of each polygon to the index of the polygon group to which the polygon belongs
+            Dictionary<IntPoint, int> inputPointToPolyGroup = new Dictionary<IntPoint, int>();
 
             // Add subject polygon paths
-            foreach (IEnumerable<DTPolygon> subjects in subjectGroups) {
-                HashSet<IntPoint> points = new HashSet<IntPoint>();
-
-                foreach (DTPolygon poly in subjects) {
-                    // Convert the points to IntPoint and add that path to Clipper
-                    List<IntPoint> contourPath = poly.Contour.ToIntPointList();
-                    clipper.AddPath(contourPath, PolyType.ptSubject, true);
-
-                    // Add unique points to a hash set that we will use later to identify output groups
-                    foreach (IntPoint point in contourPath) {
-                        points.Add(point);
-                    }
-
-                    foreach (var hole in poly.Holes) {
+            {
+                int inputGroupIndex = 0;
+                foreach (IEnumerable<DTPolygon> inputPolygons in inputPolyGroups) {
+                    foreach (DTPolygon poly in inputPolygons) {
                         // Convert the points to IntPoint and add that path to Clipper
-                        List<IntPoint> holePath = hole.ToIntPointList();
-                        clipper.AddPath(holePath, PolyType.ptSubject, true);
+                        List<IntPoint> contourPath = poly.Contour.ToIntPointList();
+                        clipper.AddPath(contourPath, PolyType.ptSubject, true);
 
-                        // Don't bother putting hole points into inputPointGroups
+                        // Map the points to the subject group index
+                        foreach (IntPoint point in contourPath) {
+                            inputPointToPolyGroup[point] = inputGroupIndex;
+                        }
+
+                        foreach (var hole in poly.Holes) {
+                            // Convert the points to IntPoint and add that path to Clipper
+                            List<IntPoint> holePath = hole.ToIntPointList();
+                            clipper.AddPath(holePath, PolyType.ptSubject, true);
+
+                            // Don't bother putting hole points into inputPointGroups
+                        }
                     }
-                }
 
-                // Add this group of points to the list of groups
-                inputPointGroups.Add(points);
+                    ++inputGroupIndex;
+                }
             }
 
             // Add clipping polygon paths
@@ -106,26 +109,27 @@ namespace DestrictubleTerrain.Clipping
             }
 
             // Map all output groups to an input group index.
-            List<List<HashSet<IntPoint>>> inputOutputGroupMappings = new List<List<HashSet<IntPoint>>>(inputPointGroups.Count);
-            for (int i = 0; i < inputPointGroups.Count; ++i) {
+            int numInputGroups = inputPolyGroups.Count();
+            List<List<HashSet<IntPoint>>> inputOutputGroupMappings = new List<List<HashSet<IntPoint>>>(numInputGroups);
+            foreach (var s in inputPolyGroups) {
                 inputOutputGroupMappings.Add(new List<HashSet<IntPoint>>());
             }
             // Output groups that could not be mapped are in their own list.
             List<HashSet<IntPoint>> unmappedOutputGroups = new List<HashSet<IntPoint>>();
             foreach (var points in outputPointGroups) {
-                int index = points.GetFirstPointGroupIndex(inputPointGroups);
-                if (index >= 0) {
-                    inputOutputGroupMappings[index].Add(points);
+                int inputGroupIndex = points.GetFirstPointGroupIndex(inputPointToPolyGroup);
+                if (inputGroupIndex >= 0) {
+                    inputOutputGroupMappings[inputGroupIndex].Add(points);
                 } else {
                     unmappedOutputGroups.Add(points);
                 }
             }
 
             // Convert Polytree into list of DTPolygons
-            List<List<List<DTPolygon>>> output = new List<List<List<DTPolygon>>>(inputPointGroups.Count + unmappedOutputGroups.Count);
-            for (int i = 0; i < inputPointGroups.Count + unmappedOutputGroups.Count; ++i) {
+            List<List<List<DTPolygon>>> output = new List<List<List<DTPolygon>>>(numInputGroups + unmappedOutputGroups.Count);
+            for (int i = 0; i < numInputGroups + unmappedOutputGroups.Count; ++i) {
                 output.Add(new List<List<DTPolygon>>());
-                if (i < inputPointGroups.Count) {
+                if (i < numInputGroups) {
                     for (int j = 0; j < inputOutputGroupMappings[i].Count; ++j) {
                         output[i].Add(new List<DTPolygon>());
                     }
@@ -138,7 +142,7 @@ namespace DestrictubleTerrain.Clipping
                 var dtPoly = new DTPolygon(contour, holes);
 
                 // Find the correct place to put this polygon in the output structure
-                int inputGroupIndex = poly.GetFirstPointGroupIndex(inputPointGroups);
+                int inputGroupIndex = poly.GetFirstPointGroupIndex(inputPointToPolyGroup);
                 if (inputGroupIndex >= 0) {
                     int outputGroupIndex = poly.GetFirstPointGroupIndex(inputOutputGroupMappings[inputGroupIndex]);
                     if (outputGroupIndex >= 0) {
@@ -212,6 +216,22 @@ namespace DestrictubleTerrain.Clipping
                         return groupIndex;
                     }
                     ++groupIndex;
+                }
+            }
+            return -1;
+        }
+
+        // Returns the index of the first group that shares a point with this polygon.
+        public static int GetFirstPointGroupIndex(this PolyNode poly, IDictionary<IntPoint, int> pointToGroup) {
+            // Don't bother checking hole points
+            return poly.Contour.GetFirstPointGroupIndex(pointToGroup);
+        }
+
+        // Returns the index of the first group that shares a point with this pointGroup.
+        public static int GetFirstPointGroupIndex(this IEnumerable<IntPoint> pointGroup, IDictionary<IntPoint, int> pointToGroup) {
+            foreach (var point in pointGroup) {
+                if (pointToGroup.ContainsKey(point)) {
+                    return pointToGroup[point];
                 }
             }
             return -1;
