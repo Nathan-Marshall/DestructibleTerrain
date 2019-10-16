@@ -37,7 +37,7 @@ namespace DestrictubleTerrain.ExplosionExecution
                     var dtObj = dtObjectList[i];
 
                     // Do basic AABB-circle check to see whether we can skip processing this destructible object with this explosion
-                    int bc = BoundsCheck(dtObj, exp);
+                    int bc = DTUtility.BoundsCheck(dtObj, exp);
                     if (bc == -1) {
                         // Object is not affected by explosion
                         continue;
@@ -114,37 +114,6 @@ namespace DestrictubleTerrain.ExplosionExecution
                 dtObjectList.AddRange(pendingAdditions);
                 pendingAdditions.Clear();
             }
-        }
-
-        // -1 means the object bounds are completely outside the explosion.
-        // 0 means the bounds intersect.
-        // 1 means the object bounds are completely inside the explosion.
-        private static int BoundsCheck(DestructibleObject dtObj, Explosion exp) {
-            Bounds oBounds = dtObj.GetComponent<Collider2D>().bounds;
-            Vector3 ePos = new Vector3(exp.Position.x, exp.Position.y);
-            float radSq = exp.Radius * exp.Radius;
-
-            // Completely outside
-            if ((oBounds.ClosestPoint(ePos) - ePos).sqrMagnitude >= radSq) {
-                return -1;
-            }
-
-            // Compute furthest point
-            Vector3 furthestPoint = new Vector3(oBounds.min.x, oBounds.min.y, 0);
-            if (oBounds.center.x > ePos.x) {
-                furthestPoint.x = oBounds.max.x;
-            }
-            if (oBounds.center.y > ePos.y) {
-                furthestPoint.y = oBounds.max.y;
-            }
-
-            // Completely inside
-            if ((furthestPoint - ePos).sqrMagnitude <= radSq) {
-                return 1;
-            }
-
-            // Bounds intersect
-            return 0;
         }
     }
 }

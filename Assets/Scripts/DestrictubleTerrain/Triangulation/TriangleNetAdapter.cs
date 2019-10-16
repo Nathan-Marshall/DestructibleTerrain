@@ -37,21 +37,34 @@ namespace DestrictubleTerrain.Triangulation
         }
 
         public IList<DTPolygon> PolygonToTriangleList(DTPolygon subject) {
-            throw new NotImplementedException();/////////////////////////////////////////////////////////////////////////////////////////////////
+            // Format polygon input and execute
+            Polygon polygon = new Polygon();
+            polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
+            foreach (var hole in subject.Holes) {
+                polygon.Add(new Contour(hole.ToVertexList()), true);
+            }
+            IMesh triangleNetOutput = polygon.Triangulate();
+
+            // Convert Triangle.NET output into list of DTPolygons
+            return triangleNetOutput.Triangles.Select(t => new DTPolygon(new List<Vector2>() {
+                t.GetVertex(0).ToVector2(),
+                t.GetVertex(1).ToVector2(),
+                t.GetVertex(2).ToVector2()
+            })).ToList();
         }
     }
 
     static class ExtensionsForClipperAdapter
     {
-        public static Vertex ToVertex(Vector2 p) {
+        public static Vertex ToVertex(this Vector2 p) {
             return new Vertex(p.x, p.y);
         }
 
-        public static Vector2 ToVector2(Vertex p) {
+        public static Vector2 ToVector2(this Vertex p) {
             return new Vector2((float)p.X, (float)p.Y);
         }
 
-        public static List<int> ToIntList(Triangle t) {
+        public static List<int> ToIntList(this Triangle t) {
             // Note that Triangle.NET outputs CCW but we want CW
             return new List<int> { t.GetVertexID(2), t.GetVertexID(1), t.GetVertexID(0) };
         }

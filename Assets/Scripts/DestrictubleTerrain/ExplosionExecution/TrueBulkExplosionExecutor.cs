@@ -77,9 +77,6 @@ namespace DestrictubleTerrain.ExplosionExecution
                             // Use only index 0 because we are dealing with single-polygon destructible objects
                             dtObj.ApplyTransformedPolygon(polyGroup[0]);
                             continue;
-                            continue;
-                            continue;
-                            continue;
                         }
                     }
                 }
@@ -95,37 +92,6 @@ namespace DestrictubleTerrain.ExplosionExecution
             // Add pendingAdditions elements to objectList so that they are included when processing the next explosion in explosions
             dtObjectList.AddRange(pendingAdditions);
             pendingAdditions.Clear();
-        }
-
-        // -1 means the object bounds are completely outside the explosion.
-        // 0 means the bounds intersect.
-        // 1 means the object bounds are completely inside the explosion.
-        private static int BoundsCheck(DestructibleObject dtObj, Explosion exp) {
-            Bounds oBounds = dtObj.GetComponent<Collider2D>().bounds;
-            Vector3 ePos = new Vector3(exp.Position.x, exp.Position.y);
-            float radSq = exp.Radius * exp.Radius;
-
-            // Completely outside
-            if ((oBounds.ClosestPoint(ePos) - ePos).sqrMagnitude >= radSq) {
-                return -1;
-            }
-
-            // Compute furthest point
-            Vector3 furthestPoint = new Vector3(oBounds.min.x, oBounds.min.y, 0);
-            if (oBounds.center.x > ePos.x) {
-                furthestPoint.x = oBounds.max.x;
-            }
-            if (oBounds.center.y > ePos.y) {
-                furthestPoint.y = oBounds.max.y;
-            }
-
-            // Completely inside
-            if ((furthestPoint - ePos).sqrMagnitude <= radSq) {
-                return 1;
-            }
-
-            // Bounds intersect
-            return 0;
         }
     }
 }
