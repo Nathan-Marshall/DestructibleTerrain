@@ -48,7 +48,7 @@ namespace DestrictubleTerrain.ExplosionExecution
                         continue;
                     } else {
                         // Add object to the input list for the subtractor
-                        relevantObjectPolygons.Add(new List<DTPolygon> { dtObj.GetTransformedPolygon() });
+                        relevantObjectPolygons.Add(dtObj.GetTransformedPolygonList());
                         relevantObjectIndices.Add(i);
                         continue;
                     }
@@ -62,9 +62,8 @@ namespace DestrictubleTerrain.ExplosionExecution
                     if (i >= relevantObjectPolygons.Count) {
                         GameObject go = new GameObject();
                         DestructibleObject newObj = go.AddComponent<DestructibleObject>();
-                        IList<DTPolygon> polyGroup = result[i][0];
-                        // Use only index 0 because we are dealing with single-polygon destructible objects
-                        newObj.ApplyTransformedPolygon(polyGroup[0]);
+                        List<DTPolygon> polyGroup = result[i][0];
+                        newObj.ApplyTransformedPolygonList(polyGroup);
                         pendingAdditions.Add(newObj);
 
                         continue;
@@ -87,16 +86,14 @@ namespace DestrictubleTerrain.ExplosionExecution
                                 DestructibleObject newObj = go.GetComponent<DestructibleObject>();
 
                                 // Apply the new clipped polygon
-                                // Use only index 0 because we are dealing with single-polygon destructible objects
-                                newObj.ApplyTransformedPolygon(polyGroup[0]);
+                                newObj.ApplyTransformedPolygonList(polyGroup);
 
                                 // Add it to the objectList, but not until after finished processing this explosion
                                 pendingAdditions.Add(newObj);
                                 continue;
                             } else {
                                 // Reuse the existing GameObject by applying the new clipped polygon to it
-                                // Use only index 0 because we are dealing with single-polygon destructible objects
-                                dtObj.ApplyTransformedPolygon(polyGroup[0]);
+                                dtObj.ApplyTransformedPolygonList(polyGroup);
                                 continue;
                             }
                         }

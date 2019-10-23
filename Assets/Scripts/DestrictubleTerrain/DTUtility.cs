@@ -39,12 +39,34 @@ public static class DTUtility
         return 0;
     }
 
-    public static IList<DTPolygon> MeshToPolygonList(DTMesh mesh) {
+    public static Bounds GetBounds(IEnumerable<Vector2> points) {
+        Vector2 min = points.First();
+        Vector2 max = points.First();
+        foreach (Vector2 p in points) {
+            if (p.x < min.x) {
+                min.x = p.x;
+            }
+            if (p.x > max.x) {
+                max.x = p.x;
+            }
+            if (p.y < min.y) {
+                min.y = p.y;
+            }
+            if (p.y > max.y) {
+                max.y = p.y;
+            }
+        }
+        Bounds b = new Bounds();
+        b.SetMinMax(min, max);
+        return b;
+    }
+
+    public static List<DTPolygon> MeshToPolygonList(DTMesh mesh) {
         return mesh.Partitions.Select(part => new DTPolygon(part.Select(i => mesh.Vertices[i]).ToList())).ToList();
     }
 
     // Assumes no holes in polygons
-    public static DTMesh SimplePolygonListToMesh(IList<DTPolygon> polygons) {
+    public static DTMesh SimplePolygonListToMesh(List<DTPolygon> polygons) {
         const long FixedDecimalConversion = 100000;
 
         IntPoint ToIntPoint(Vector2 p) {

@@ -36,7 +36,7 @@ namespace DestrictubleTerrain.Triangulation
             return new DTMesh(vertices, triangles);
         }
 
-        public IList<DTPolygon> PolygonToTriangleList(DTPolygon subject) {
+        public List<DTPolygon> PolygonToTriangleList(DTPolygon subject) {
             // Format polygon input and execute
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
@@ -46,11 +46,7 @@ namespace DestrictubleTerrain.Triangulation
             IMesh triangleNetOutput = polygon.Triangulate();
 
             // Convert Triangle.NET output into list of DTPolygons
-            return triangleNetOutput.Triangles.Select(t => new DTPolygon(new List<Vector2>() {
-                t.GetVertex(0).ToVector2(),
-                t.GetVertex(1).ToVector2(),
-                t.GetVertex(2).ToVector2()
-            })).ToList();
+            return triangleNetOutput.Triangles.Select(t => new DTPolygon(t.ToVertexList())).ToList();
         }
     }
 
@@ -67,6 +63,15 @@ namespace DestrictubleTerrain.Triangulation
         public static List<int> ToIntList(this Triangle t) {
             // Note that Triangle.NET outputs CCW but we want CW
             return new List<int> { t.GetVertexID(2), t.GetVertexID(1), t.GetVertexID(0) };
+        }
+
+        public static List<Vector2> ToVertexList(this Triangle t) {
+            // Note that Triangle.NET outputs CCW but we want CW
+            return new List<Vector2> {
+                t.GetVertex(2).ToVector2(),
+                t.GetVertex(1).ToVector2(),
+                t.GetVertex(0).ToVector2()
+            };
         }
 
         public static List<Vertex> ToVertexList(this IEnumerable<Vector2> vectors) {

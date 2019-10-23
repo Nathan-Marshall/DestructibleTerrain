@@ -34,7 +34,7 @@ public static class DestructibleTerrainTests
             new SampleGroupDefinition(ProcessExplosionsStr),
 
             new SampleGroupDefinition(PhysicsStr),
-    };
+        };
     }
 
     public static GameObject CreateFloor(float length = 100, float thickness = 5) {
@@ -64,8 +64,8 @@ public static class DestructibleTerrainTests
         return go;
     }
 
-    public static DestructibleObject CreateRingObject(bool hasHole = true, float radius = 1.0f,
-            float variationAmplitude = 0.1f, int numEdges = 24) {
+    public static T CreateRingObject<T> (bool hasHole = true, float radius = 1.0f,
+            float variationAmplitude = 0.1f, int numEdges = 24) where T : DestructibleObject {
         float angleStep = 2 * Mathf.PI / numEdges;
 
         List<Vector2> exterior = new List<Vector2>();
@@ -94,8 +94,8 @@ public static class DestructibleTerrainTests
         }
 
         GameObject go = new GameObject();
-        DestructibleObject destructibleObject = go.AddComponent<DestructibleObject>();
-        destructibleObject.ApplyPolygon(polygon);
+        T destructibleObject = go.AddComponent<T>();
+        destructibleObject.ApplyPolygonList(new List<DTPolygon> { polygon });
 
         return destructibleObject;
     }
@@ -109,7 +109,8 @@ public static class DestructibleTerrainTests
         }
     }
 
-    private static IEnumerator CreateRingsAndMeasure(bool hasHoles, int columns, int rows) {
+    private static IEnumerator CreateRingsAndMeasure<T> (bool hasHoles, int columns, int rows)
+            where T : DestructibleObject {
         using (Measure.ProfilerMarkers(ProfilerMarkers.SampleGroupDefinitions)) {
             ProfilerMarkers.Creation.Begin();
 
@@ -118,7 +119,7 @@ public static class DestructibleTerrainTests
             for (int c = 0; c < columns; ++c) {
                 for (int r = 0; r < rows; ++r) {
                     Vector2 pos = new Vector2(c * spacing - totalWidth, (r + 1) * spacing);
-                    CreateRingObject(hasHoles).transform.position = pos;
+                    CreateRingObject<T>(hasHoles).transform.position = pos;
                 }
             }
 
@@ -127,7 +128,8 @@ public static class DestructibleTerrainTests
         yield return null;
     }
 
-    public static IEnumerator PhysicsTest (bool hasHoles, int columns, int rows, int warmupFrames, int captureFrames) {
+    public static IEnumerator PhysicsTest<T> (bool hasHoles, int columns, int rows, int warmupFrames, int captureFrames)
+            where T : DestructibleObject {
         // Set a constant seed so that we get the same results every time
         UnityEngine.Random.InitState(12345);
 
@@ -135,7 +137,7 @@ public static class DestructibleTerrainTests
         CreateFloor(1000);
 
         // Meaure the time to create all destructible objects
-        yield return CreateRingsAndMeasure(hasHoles, columns, rows);
+        yield return CreateRingsAndMeasure<T>(hasHoles, columns, rows);
 
         // Allow objects to collide before we measure physics
         yield return WarmupFrames(warmupFrames);
@@ -146,9 +148,9 @@ public static class DestructibleTerrainTests
         CleanUp();
     }
 
-    public static IEnumerator ContinuousExplosionTest(IExplosionExecutor explosionExecutor, IPolygonSubtractor subtractor,
+    public static IEnumerator ContinuousExplosionTest<T> (IExplosionExecutor explosionExecutor, IPolygonSubtractor subtractor,
             int numExplosions, float explosionRadius, float explosionInterval, bool hasHoles, int columns, int rows,
-            int warmupFrames, int captureFrames) {
+            int warmupFrames, int captureFrames) where T : DestructibleObject {
         // Set a constant seed so that we get the same results every time
         UnityEngine.Random.InitState(12345);
 
@@ -156,7 +158,7 @@ public static class DestructibleTerrainTests
         CreateFloor(1000);
 
         // Meaure the time to create all destructible objects
-        yield return CreateRingsAndMeasure(hasHoles, columns, rows);
+        yield return CreateRingsAndMeasure<T>(hasHoles, columns, rows);
 
         // Set all objects to static
         var dObjs = DestructibleObject.FindAll();
@@ -192,8 +194,9 @@ public static class DestructibleTerrainTests
         CleanUp();
     }
 
-    public static IEnumerator OneTimeExplosionTest(IExplosionExecutor explosionExecutor, IPolygonSubtractor subtractor,
-            int numExplosions, float explosionRadius, float explosionInterval, bool hasHoles, int columns, int rows) {
+    public static IEnumerator OneTimeExplosionTest<T> (IExplosionExecutor explosionExecutor, IPolygonSubtractor subtractor,
+            int numExplosions, float explosionRadius, float explosionInterval, bool hasHoles, int columns, int rows)
+            where T : DestructibleObject {
         // Set a constant seed so that we get the same results every time
         UnityEngine.Random.InitState(12345);
 
@@ -201,7 +204,7 @@ public static class DestructibleTerrainTests
         CreateFloor(1000);
 
         // Meaure the time to create all destructible objects
-        yield return CreateRingsAndMeasure(hasHoles, columns, rows);
+        yield return CreateRingsAndMeasure<T>(hasHoles, columns, rows);
 
         // Set all objects to static
         var dObjs = DestructibleObject.FindAll();
@@ -245,73 +248,253 @@ public static class DestructibleTerrainTests
 
     public static class PureCollision
     {
-        [UnityTest, Performance]
-        public static IEnumerator CollisionTest100Solids() {
-            yield return PhysicsTest(false, 10, 10, 100, 200);
+        public static class PolygonClippingPolygonCollider
+        {
+            //[UnityTest, Performance]
+            public static IEnumerator Solids100() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(false, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Solids200() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(false, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Solids400() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(false, 40, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings100() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings200() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(true, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Rings400() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(true, 40, 10, 100, 200);
+            }
         }
 
-        [UnityTest, Performance]
-        public static IEnumerator CollisionTest200Solids() {
-            yield return PhysicsTest(false, 20, 10, 100, 200);
+        public static class PolygonClippingTriangulatedCollider
+        {
+            //[UnityTest, Performance]
+            public static IEnumerator Solids100() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(false, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Solids200() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(false, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Solids400() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(false, 40, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings100() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings200() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(true, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Rings400() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(true, 40, 10, 100, 200);
+            }
         }
 
-        [UnityTest, Performance]
-        public static IEnumerator CollisionTest400Solids() {
-            yield return PhysicsTest(false, 40, 10, 100, 200);
-        }
+        public static class TriangulatedClippingTriangulatedCollider
+        {
+            //[UnityTest, Performance]
+            public static IEnumerator Solids100() {
+                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(false, 10, 10, 100, 200);
+            }
 
-        [UnityTest, Performance]
-        public static IEnumerator CollisionTest100Rings() {
-            yield return PhysicsTest(true, 10, 10, 100, 200);
-        }
+            //[UnityTest, Performance]
+            public static IEnumerator Solids200() {
+                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(false, 20, 10, 100, 200);
+            }
 
-        [UnityTest, Performance]
-        public static IEnumerator CollisionTest200Rings() {
-            yield return PhysicsTest(true, 20, 10, 100, 200);
-        }
+            [UnityTest, Performance]
+            public static IEnumerator Solids400() {
+                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(false, 40, 10, 100, 200);
+            }
 
-        [UnityTest, Performance]
-        public static IEnumerator CollisionTest400Rings() {
-            yield return PhysicsTest(true, 40, 10, 100, 200);
+            //[UnityTest, Performance]
+            public static IEnumerator Rings100() {
+                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings200() {
+                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Rings400() {
+                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 40, 10, 100, 200);
+            }
         }
     }
 
-    public static class ExplosionTests
+    public static class ExplosionPerFrameTests
     {
-        [UnityTest, Performance]
-        public static IEnumerator ExplosionPerFrameIterativeClipper() {
-            yield return ContinuousExplosionTest(IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                Time.fixedDeltaTime, true, 10, 10, 100, 200);
+        public static class PolygonClippingPolygonCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
         }
 
-        [UnityTest, Performance]
-        public static IEnumerator ExplosionPerFrameBulkClipper() {
-            yield return ContinuousExplosionTest(BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                Time.fixedDeltaTime, true, 10, 10, 100, 200);
+        public static class PolygonClippingTriangulatedCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
         }
 
-        //[UnityTest, Performance]
-        public static IEnumerator ExplosionPerFrameTrueBulkClipper() {
-            yield return ContinuousExplosionTest(TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                Time.fixedDeltaTime, true, 10, 10, 100, 200);
+        public static class TriangulatedClippingTriangulatedCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+        }
+    }
+
+    public static class OneTime100ExplosionTests
+    {
+        public static class PolygonClippingPolygonCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
         }
 
-        [UnityTest, Performance]
-        public static IEnumerator OneTime100ExplosionsIterativeClipper() {
-            yield return OneTimeExplosionTest(IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                Time.fixedDeltaTime, true, 10, 10);
+        public static class PolygonClippingTriangulatedCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider> (
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider> (
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider> (
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
         }
 
-        [UnityTest, Performance]
-        public static IEnumerator OneTime100ExplosionsBulkClipper() {
-            yield return OneTimeExplosionTest(BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                Time.fixedDeltaTime, true, 10, 10);
-        }
+        public static class TriangulatedClippingTriangulatedCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
 
-        //[UnityTest, Performance]
-        public static IEnumerator OneTime100ExplosionsTrueBulkClipper() {
-            yield return OneTimeExplosionTest(TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                Time.fixedDeltaTime, true, 10, 10);
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
         }
     }
 }

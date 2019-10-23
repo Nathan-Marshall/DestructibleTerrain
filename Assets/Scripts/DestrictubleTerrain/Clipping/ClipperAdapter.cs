@@ -24,7 +24,7 @@ namespace DestrictubleTerrain.Clipping
             clipper = new Clipper();
         }
 
-        public IList<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
+        public List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
             clipper.Clear();
 
             // Add subject polygon paths
@@ -53,10 +53,70 @@ namespace DestrictubleTerrain.Clipping
 
             return output;
         }
+        
+        public List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons) {
+            clipper.Clear();
+
+            // Add subject polygon paths
+            foreach (DTPolygon poly in inputPolyGroup) {
+                // Convert the points to IntPoint and add that path to Clipper
+                List<IntPoint> contourPath = poly.Contour.ToIntPointList();
+                clipper.AddPath(contourPath, PolyType.ptSubject, true);
+
+                foreach (var hole in poly.Holes) {
+                    // Convert the points to IntPoint and add that path to Clipper
+                    List<IntPoint> holePath = hole.ToIntPointList();
+                    clipper.AddPath(holePath, PolyType.ptSubject, true);
+                }
+            }
+
+            // Add clipping polygon paths
+            foreach (DTPolygon poly in clippingPolygons) {
+                clipper.AddPath(poly.Contour.ToIntPointList(), PolyType.ptClip, true);
+
+                foreach (var hole in poly.Holes) {
+                    clipper.AddPath(hole.ToIntPointList(), PolyType.ptClip, true);
+                }
+            }
+
+            // Execute subtraction and store result in a PolyTree so that we can easily identify holes
+            PolyTree clipperOutput = new PolyTree();
+            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNegative);
+
+            // Construct a list of point sets to identify unique groups of connected output polygons
+            List<HashSet<IntPoint>> outputPointGroups = new List<HashSet<IntPoint>>();
+            foreach (var poly in clipperOutput.Childs) {
+                poly.MergeIntoPointGroups(outputPointGroups);
+            }
+
+            // Convert Polytree into list of DTPolygons
+            List<List<DTPolygon>> output = new List<List<DTPolygon>>(outputPointGroups.Count);
+            for (int i = 0; i < outputPointGroups.Count; ++i) {
+                output.Add(new List<DTPolygon>());
+            }
+            foreach (var poly in clipperOutput.Childs) {
+                // Convert the polygon to a DTPolygon and add it to the output
+                List<Vector2> contour = poly.Contour.ToVector2List();
+                List<List<Vector2>> holes = poly.Childs.Select(hole => hole.Contour.ToVector2List()).ToList();
+                var dtPoly = new DTPolygon(contour, holes);
+
+                // Find the correct place to put this polygon in the output structure
+                int outputGroupIndex = poly.GetFirstPointGroupIndex(outputPointGroups);
+                if (outputGroupIndex >= 0) {
+                    // Matched output group
+                    output[outputGroupIndex].Add(dtPoly);
+                } else {
+                    // New output group
+                    output.Add(new List<DTPolygon>() { dtPoly });
+                }
+            }
+
+            return output;
+        }
 
         // WARNING: This implementation is currently very volatile and can cause multiple input polygon groups to fuse
         // together if a vertex from one is very close to the vertex of another.
-        public IList<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
+        public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
             clipper.Clear();
 
             // Map the points of each polygon to the index of the polygon group to which the polygon belongs
@@ -241,7 +301,7 @@ namespace DestrictubleTerrain.Clipping
         // If any other groups share a point with the polygon, those groups are merged into the first group as well,
         // and are removed from their previous positions in the list.
         // Returns the index of the merged (or new) group.
-        public static int MergeIntoPointGroups(this PolyNode poly, IList<HashSet<IntPoint>> pointGroups) {
+        public static int MergeIntoPointGroups(this PolyNode poly, List<HashSet<IntPoint>> pointGroups) {
             // Find connected groups
             List<int> connectedGroupIndices = new List<int>();
             for (int i = 0; i < pointGroups.Count; ++i) {

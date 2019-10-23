@@ -13,7 +13,7 @@ using UnityEngine;
 [RequireComponent(typeof(PolygonCollider2D))]
 [RequireComponent(typeof(Rigidbody2D))]
 [ExecuteAlways]
-public class DestructibleObject : MonoBehaviour
+abstract public class DestructibleObject : MonoBehaviour
 {
     // Static
 
@@ -28,74 +28,31 @@ public class DestructibleObject : MonoBehaviour
 
     // Non-static
 
-    private DTPolygon dtPolygon;
+    protected DTMesh dtRenderMesh;
 
-    private DTMesh dtMesh;
-
-    void Start() {
+    protected virtual void Start() {
         tag = DestructibleObjectTag;
         GetComponent<Rigidbody2D>().useAutoMass = true;
-
-        // Assign default polygon when this component is attached in the editor
-        if (dtPolygon == null && Application.isEditor) {
-            ApplyPolygon(new DTPolygon(
-                new List<Vector2> {
-                new Vector2(-1, -1),
-                new Vector2(-1,  1),
-                new Vector2( 1,  1),
-                new Vector2( 1, -1)
-                },
-                new List<List<Vector2>> {
-                new List<Vector2> {
-                    new Vector2(-0.75f, -0.75f),
-                    new Vector2( 0.75f, -0.75f),
-                    new Vector2( 0.75f,  0.75f),
-                    new Vector2(-0.75f,  0.75f)
-                }
-                }));
-        }
     }
 
-    public DTPolygon GetTransformedPolygon() {
-        Vector2 transform2DPoint(Vector2 p) {
-            var v3 = transform.TransformPoint(p.x, p.y, 0);
-            return new Vector2(v3.x, v3.y);
-        }
-        return new DTPolygon(
-            dtPolygon.Contour.Select(transform2DPoint).ToList(),
-            dtPolygon.Holes.Select(hole => hole.Select(transform2DPoint).ToList()).ToList());
+    public Vector2 TransformPoint(Vector2 p) {
+        var v3 = transform.TransformPoint(p.x, p.y, 0);
+        return new Vector2(v3.x, v3.y);
     }
 
-    public void ApplyPolygon(DTPolygon dtPolygon) {
-        if (this.dtPolygon == dtPolygon) {
-            return;
-        }
-
-        this.dtPolygon = dtPolygon;
-
-        // Collider from polygon
-        ApplyCollider(dtPolygon);
-
-        // Triangulate polygon
-        dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
-
-        // Create mesh from triangles
-        ApplyMesh(dtMesh);
+    public Vector2 InverseTransformPoint(Vector2 p) {
+        var v3 = transform.InverseTransformPoint(p.x, p.y, 0);
+        return new Vector2(v3.x, v3.y);
     }
 
-    public void ApplyTransformedPolygon(DTPolygon transformedPolygon) {
-        Vector2 inverseTransform2DPoint(Vector2 p) {
-            var v3 = transform.InverseTransformPoint(p.x, p.y, 0);
-            return new Vector2(v3.x, v3.y);
-        }
-        DTPolygon dtPolygon = new DTPolygon(
-            transformedPolygon.Contour.Select(inverseTransform2DPoint).ToList(),
-            transformedPolygon.Holes.Select(hole => hole.Select(inverseTransform2DPoint).ToList()).ToList());
+    public abstract List<DTPolygon> GetTransformedPolygonList();
 
-        ApplyPolygon(dtPolygon);
-    }
+    // Applies the collider and mesh in whatever format the DestructibleObject subclass stores its data
+    public abstract void ApplyPolygonList(List<DTPolygon> dtPolygonList);
 
-    private void ApplyCollider(DTPolygon dtPolygon) {
+    public abstract void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList);
+
+    protected void ApplyCollider(DTPolygon dtPolygon) {
         PolygonCollider2D polygonCollider = GetComponent<PolygonCollider2D>();
         polygonCollider.pathCount = 1 + dtPolygon.Holes.Count;
         polygonCollider.SetPath(0, dtPolygon.Contour);
@@ -108,7 +65,38 @@ public class DestructibleObject : MonoBehaviour
         }
     }
 
-    private void ApplyMesh(DTMesh dtMesh) {
+    // Assumes that the polygons in the given polygon group have no holes.
+    protected void ApplyCollider(List<DTPolygon> dtPolygonList) {
+        PolygonCollider2D polygonCollider = GetComponent<PolygonCollider2D>();
+        polygonCollider.pathCount = dtPolygonList.Count;
+        for (int i = 0; i < dtPolygonList.Count; i++) {
+            polygonCollider.SetPath(i, dtPolygonList[i].Contour);
+        }
+
+        if (GetComponent<Rigidbody2D>().mass < MassCutoff) {
+            Destroy(gameObject);
+        }
+    }
+
+    protected void ApplyCollider(DTMesh dtMesh) {
+        PolygonCollider2D polygonCollider = GetComponent<PolygonCollider2D>();
+        polygonCollider.pathCount = dtMesh.Partitions.Count;
+        int i = 0;
+        foreach (var partition in dtMesh.Partitions) {
+            polygonCollider.SetPath(i++, partition.Select(vIndex => dtMesh.Vertices[vIndex]).ToArray());
+        }
+
+        if (GetComponent<Rigidbody2D>().mass < MassCutoff) {
+            Destroy(gameObject);
+        }
+    }
+
+    protected void ApplyRenderMesh(DTMesh dtMesh) {
+        if (dtRenderMesh == dtMesh) {
+            return;
+        }
+        dtRenderMesh = dtMesh;
+
         MeshFilter mf = GetComponent<MeshFilter>();
         mf.sharedMesh = new Mesh() {
             vertices = dtMesh.Vertices.Select(v => new Vector3(v.x, v.y)).ToArray(),

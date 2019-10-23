@@ -10,6 +10,6 @@ namespace DestrictubleTerrain.Triangulation
     {
         DTMesh PolygonToMesh(DTPolygon subject);
 
-        IList<DTPolygon> PolygonToTriangleList(DTPolygon subject);
+        List<DTPolygon> PolygonToTriangleList(DTPolygon subject);
     }
 }
