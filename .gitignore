@@ -1,6 +1,7 @@
 .vs
 Temp
 Library
+Logs
 obj
 *.*proj
 *.sln
