@@ -1,5 +1,6 @@
 ﻿using ClipperLib;
 using DestrictubleTerrain;
+using DestrictubleTerrain.Destructible;
 using System;
 using System.Collections;
 using System.Collections.Generic;
