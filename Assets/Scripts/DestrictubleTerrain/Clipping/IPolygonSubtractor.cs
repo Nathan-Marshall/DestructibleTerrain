@@ -12,7 +12,7 @@ namespace DestrictubleTerrain.Clipping
         // Returns one or more polygons, depending on whether any part of the subject gets completely divided from the rest.
         List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon);
 
-        // Takes a subject polygon group and subtracts a clipping polygons from it.
+        // Takes a subject polygon group and subtracts clipping polygons from it.
         // Returns a list of polygon groups, since the subject polygon group may have have been divided into several disjoint pieces.
         List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons);
 

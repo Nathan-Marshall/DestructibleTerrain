@@ -1,6 +1,7 @@
 ﻿using ClipperLib;
 using DestrictubleTerrain;
 using DestrictubleTerrain.Destructible;
+using DestrictubleTerrain.Triangulation;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -62,12 +63,16 @@ public static class DTUtility
         return b;
     }
 
-    public static List<DTPolygon> MeshToPolygonList(DTMesh mesh) {
-        return mesh.Partitions.Select(part => new DTPolygon(part.Select(i => mesh.Vertices[i]).ToList())).ToList();
+    public static DTConvexPolygonGroup TriangulateAll(List<DTPolygon> polygonList, ITriangulator triangulator) {
+        return new DTConvexPolygonGroup(polygonList.SelectMany(
+            poly => triangulator.PolygonToTriangleList(poly)).ToList());
     }
 
-    // Assumes no holes in polygons
-    public static DTMesh SimplePolygonListToMesh(List<DTPolygon> polygons) {
+    public static DTConvexPolygonGroup ToPolyGroup(this DTMesh mesh) {
+        return new DTConvexPolygonGroup(mesh.Partitions.Select(part => part.Select(i => mesh.Vertices[i]).ToList()).ToList());
+    }
+    
+    public static DTMesh ToMesh(this DTConvexPolygonGroup polyGroup) {
         const long FixedDecimalConversion = 100000;
 
         IntPoint ToIntPoint(Vector2 p) {
@@ -76,9 +81,9 @@ public static class DTUtility
 
         Dictionary<IntPoint, int> vertexMap = new Dictionary<IntPoint, int>();
         List<Vector2> vertices = new List<Vector2>();
-        foreach (var poly in polygons) {
+        foreach (var poly in polyGroup) {
             // Assume no holes
-            foreach (var v in poly.Contour) {
+            foreach (var v in poly) {
                 try {
                     // Add the vertex only if it has not already been added
                     vertexMap.Add(ToIntPoint(v), vertices.Count);
@@ -87,11 +92,11 @@ public static class DTUtility
             }
         }
 
-        List<List<int>> partitions = new List<List<int>>(polygons.Count);
-        foreach (var poly in polygons) {
+        List<List<int>> partitions = new List<List<int>>(polyGroup.Count);
+        foreach (var poly in polyGroup) {
             List<int> indices = new List<int>();
             // Assume no holes
-            foreach (var v in poly.Contour) {
+            foreach (var v in poly) {
                 indices.Add(vertexMap[ToIntPoint(v)]);
             }
             partitions.Add(indices);

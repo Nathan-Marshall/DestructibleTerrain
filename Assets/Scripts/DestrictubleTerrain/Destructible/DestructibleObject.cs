@@ -66,13 +66,12 @@ namespace DestrictubleTerrain.Destructible
                 Destroy(gameObject);
             }
         }
-
-        // Assumes that the polygons in the given polygon group have no holes.
-        protected void ApplyCollider(List<DTPolygon> dtPolygonList) {
+        
+        protected void ApplyCollider(DTConvexPolygonGroup polyGroup) {
             PolygonCollider2D polygonCollider = GetComponent<PolygonCollider2D>();
-            polygonCollider.pathCount = dtPolygonList.Count;
-            for (int i = 0; i < dtPolygonList.Count; i++) {
-                polygonCollider.SetPath(i, dtPolygonList[i].Contour);
+            polygonCollider.pathCount = polyGroup.Count;
+            for (int i = 0; i < polyGroup.Count; i++) {
+                polygonCollider.SetPath(i, polyGroup[i]);
             }
 
             if (GetComponent<Rigidbody2D>().mass < MassCutoff) {

@@ -12,13 +12,13 @@ namespace DestrictubleTerrain.Destructible
 {
     public class DestructibleObjectTriangulatedClippingTriangulatedCollider : DestructibleObject
     {
-        private List<DTPolygon> dtPolygonList;
+        private DTConvexPolygonGroup dtPolyGroup;
 
         protected override void Start() {
             base.Start();
 
             // Assign default polygon when this component is attached in the editor
-            if (dtPolygonList == null && Application.isEditor) {
+            if (dtPolyGroup == null && Application.isEditor) {
                 ApplyPolygonList(TriangleNetAdapter.Instance.PolygonToTriangleList(new DTPolygon(
                     new List<Vector2> {
                         new Vector2(-1, -1),
@@ -33,31 +33,25 @@ namespace DestrictubleTerrain.Destructible
                         new Vector2( 0.75f,  0.75f),
                         new Vector2(-0.75f,  0.75f)
                     }
-                    })));
+                    })).ToPolygonList());
             }
         }
 
         public override List<DTPolygon> GetTransformedPolygonList() {
             // Assume no holes in polygon list
-            return dtPolygonList.Select(poly => new DTPolygon(
-                poly.Contour.Select(TransformPoint).ToList())).ToList();
+            return dtPolyGroup.Select(poly => new DTPolygon(
+                poly.Select(TransformPoint).ToList())).ToList();
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
-            dtPolygonList = new List<DTPolygon>();
-            // These polygons could potentially be concave or have holes, so we will triangulate each one before applying
-            foreach (DTPolygon poly in clippedPolygonList) {
-                var triangleList = TriangleNetAdapter.Instance.PolygonToTriangleList(poly);
-                foreach (DTPolygon triangle in triangleList) {
-                    dtPolygonList.Add(triangle);
-                }
-            }
+            // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
+            dtPolyGroup = DTUtility.TriangulateAll(clippedPolygonList, TriangleNetAdapter.Instance);
 
             // Collider from polygon
-            ApplyCollider(dtPolygonList);
+            ApplyCollider(dtPolyGroup);
 
             // Create mesh from triangulated polygon
-            ApplyRenderMesh(DTUtility.SimplePolygonListToMesh(dtPolygonList));
+            ApplyRenderMesh(dtPolyGroup.ToMesh());
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
