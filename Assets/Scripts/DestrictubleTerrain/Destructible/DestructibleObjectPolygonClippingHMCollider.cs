@@ -55,6 +55,7 @@ namespace DestrictubleTerrain.Destructible
 
             DTMesh dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
             PolyPartitionHM.ConvexPartition_HM(dtPolygon.ToTPPLPolyList(), out List<PolyPartitionHM.TPPLPoly> hmOutput);
+            DTMesh dtHMMesh = TriangleNetAdapter.Instance.PolygonToHMMesh(dtPolygon);
 
             // Collider from polygon
             ApplyCollider(hmOutput.ToPolyGroup());

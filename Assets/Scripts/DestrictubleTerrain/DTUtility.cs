@@ -10,6 +10,11 @@ using UnityEngine;
 
 public static class DTUtility
 {
+    public static T GetCircular<T>(this IList<T> list, int i) {
+        i = ((i % list.Count) + list.Count) % list.Count;
+        return list[i];
+    }
+
     // -1 means the object bounds are completely outside the explosion.
     // 0 means the bounds intersect.
     // 1 means the object bounds are completely inside the explosion.
