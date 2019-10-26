@@ -54,11 +54,12 @@ namespace DestrictubleTerrain.Destructible
             dtPolygon = dtPolygonList[0];
 
             DTMesh dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
-            PolyPartitionHM.ConvexPartition_HM(dtPolygon.ToTPPLPolyList(), out List<PolyPartitionHM.TPPLPoly> hmOutput);
-            DTMesh dtHMMesh = TriangleNetAdapter.Instance.PolygonToHMMesh(dtPolygon);
+            //PolyPartitionHM.ConvexPartition_HM(dtPolygon.ToTPPLPolyList(), out List<PolyPartitionHM.TPPLPoly> hmOutput);
+            //DTMesh dtHMMesh = TriangleNetAdapter.Instance.PolygonToHMMesh(dtPolygon);
 
             // Collider from polygon
-            ApplyCollider(hmOutput.ToPolyGroup());
+            //ApplyCollider(hmOutput.ToPolyGroup());
+            ApplyCollider(HertelMehlhorn.Execute(dtMesh));
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);
