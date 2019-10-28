@@ -53,13 +53,18 @@ namespace DestrictubleTerrain.Destructible
             }
             dtPolygon = dtPolygonList[0];
 
+            DTProfileMarkers.Triangulation.Begin();
             DTMesh dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
+            DTProfileMarkers.Triangulation.End();
             //PolyPartitionHM.ConvexPartition_HM(dtPolygon.ToTPPLPolyList(), out List<PolyPartitionHM.TPPLPoly> hmOutput);
             //DTMesh dtHMMesh = TriangleNetAdapter.Instance.PolygonToHMMesh(dtPolygon);
 
             // Collider from polygon
-            //ApplyCollider(hmOutput.ToPolyGroup());
-            ApplyCollider(HertelMehlhorn.Execute(dtMesh));
+            DTProfileMarkers.HertelMehlhorn.Begin();
+            DTMesh hmMesh = HertelMehlhorn.Execute(dtMesh);
+            DTProfileMarkers.HertelMehlhorn.End();
+
+            ApplyCollider(hmMesh);
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);

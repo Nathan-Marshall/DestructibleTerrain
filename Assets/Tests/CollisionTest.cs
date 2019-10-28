@@ -17,7 +17,7 @@ public static class DestructibleTerrainTests
     public static class ProfilerMarkers {
         public static readonly string Namespace = "DestructibleTerrainTests";
 
-        // Custom ProfilerMarkers
+        // DestructibleTerrainTests ProfilerMarkers
         public static readonly string CreationStr = Namespace + ".Creation";
         public static readonly ProfilerMarker Creation = new ProfilerMarker(CreationStr);
 
@@ -31,9 +31,15 @@ public static class DestructibleTerrainTests
         public static readonly ProfilerMarker Physics = new ProfilerMarker(PhysicsStr);
 
         public static readonly SampleGroupDefinition[] SampleGroupDefinitions = {
+            // DestructibleTerrainTests ProfilerMarkers
             new SampleGroupDefinition(CreationStr),
             new SampleGroupDefinition(ProcessExplosionsStr),
-
+            
+            // DestructibleTerrain ProfilerMarkers
+            new SampleGroupDefinition(DTProfileMarkers.TriangulationStr),
+            new SampleGroupDefinition(DTProfileMarkers.HertelMehlhornStr),
+            
+            // Unity ProfilerMarkers
             new SampleGroupDefinition(PhysicsStr),
         };
     }
@@ -347,6 +353,39 @@ public static class DestructibleTerrainTests
                 yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 40, 10, 100, 200);
             }
         }
+
+        public static class PolygonClippingHMCollider
+        {
+            //[UnityTest, Performance]
+            public static IEnumerator Solids100() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingHMCollider>(false, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Solids200() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingHMCollider>(false, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Solids400() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingHMCollider>(false, 40, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings100() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingHMCollider>(true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator Rings200() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingHMCollider>(true, 20, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator Rings400() {
+                yield return PhysicsTest<DestructibleObjectPolygonClippingHMCollider>(true, 40, 10, 100, 200);
+            }
+        }
     }
 
     public static class ExplosionPerFrameTests
@@ -422,6 +461,30 @@ public static class DestructibleTerrainTests
                     Time.fixedDeltaTime, true, 10, 10, 100, 200);
             }
         }
+
+        public static class PolygonClippingHMCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingHMCollider>(
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingHMCollider>(
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingHMCollider>(
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
+                    Time.fixedDeltaTime, true, 10, 10, 100, 200);
+            }
+        }
     }
 
     public static class OneTime100ExplosionTests
@@ -493,6 +556,30 @@ public static class DestructibleTerrainTests
             //[UnityTest, Performance]
             public static IEnumerator TrueBulkClipper() {
                 yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
+                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+        }
+
+        public static class PolygonClippingHMCollider
+        {
+            [UnityTest, Performance]
+            public static IEnumerator IterativeClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingHMCollider>(
+                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            [UnityTest, Performance]
+            public static IEnumerator BulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingHMCollider>(
+                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
+                    Time.fixedDeltaTime, true, 10, 10);
+            }
+
+            //[UnityTest, Performance]
+            public static IEnumerator TrueBulkClipper() {
+                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingHMCollider>(
                     TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
                     Time.fixedDeltaTime, true, 10, 10);
             }

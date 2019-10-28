@@ -57,7 +57,10 @@ namespace DestrictubleTerrain.Destructible
             ApplyCollider(dtPolygon);
 
             // Create mesh from triangulated polygon
-            ApplyRenderMesh(TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon));
+            DTProfileMarkers.Triangulation.Begin();
+            DTMesh dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
+            DTProfileMarkers.Triangulation.End();
+            ApplyRenderMesh(dtMesh);
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {

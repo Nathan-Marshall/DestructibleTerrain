@@ -45,7 +45,9 @@ namespace DestrictubleTerrain.Destructible
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
+            DTProfileMarkers.Triangulation.Begin();
             dtPolyGroup = DTUtility.TriangulateAll(clippedPolygonList, TriangleNetAdapter.Instance);
+            DTProfileMarkers.Triangulation.End();
 
             // Collider from polygon
             ApplyCollider(dtPolyGroup);

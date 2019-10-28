@@ -77,21 +77,31 @@ public static class HertelMehlhorn
 
     // Note: allows output to have consecutive colinear edges in a partition
     public static DTMesh Execute(DTMesh input) {
+        List<int> clearedPolys = new List<int>();
         Dictionary<SimplifiedEdge, Edge> realEdges = new Dictionary<SimplifiedEdge, Edge>();
 
         List<int>[] tempPartitions = new List<int>[input.Partitions.Count];
         int[] polyRemapper = new int[input.Partitions.Count];
-        for (int i = 0; i < input.Partitions.Count; i++) {
-            tempPartitions[i] = new List<int>(input.Partitions[i]);
-            polyRemapper[i] = i;
-        }
-        List<int> getPolygon (int i) {
-            return tempPartitions[polyRemapper[i]];
+
+        // Local function that gets the remapped polygon index for the given original index
+        int getRemappedIndex (int i) {
+            Stack<int> collapseStack = new Stack<int>();
+            while (i != polyRemapper[i]) {
+                collapseStack.Push(i);
+                i = polyRemapper[i];
+            }
+            // Lazily collapse remapping chains (entries that remap multiple times should remap only once)
+            while (collapseStack.Count > 0) {
+                polyRemapper[collapseStack.Pop()] = i;
+            }
+            return i;
         }
 
         // Determine internal edges and map them to their connected polygons
         for (int polyIndex = 0; polyIndex < input.Partitions.Count; polyIndex++) {
             List<int> poly = input.Partitions[polyIndex];
+            tempPartitions[polyIndex] = new List<int>(poly);
+            polyRemapper[polyIndex] = polyIndex;
 
             // Add all the initial partitions (triangles if the input was a triangulation)
             for (int vertexIndex = 0; vertexIndex < poly.Count; vertexIndex++) {
@@ -116,7 +126,8 @@ public static class HertelMehlhorn
             Edge realEdge = internalEdgePair.Value;
 
             // Find the index within the right polygon where the shared edge ends (P1)
-            List<int> rightPoly = getPolygon(realEdge.RightPoly);
+            int rightPolyIndex = getRemappedIndex(realEdge.RightPoly);
+            List<int> rightPoly = tempPartitions[rightPolyIndex];
             int rightPolyStart = -1;
             for (int i = 0; i < rightPoly.Count; i++) {
                 int p = rightPoly[i];
@@ -127,7 +138,8 @@ public static class HertelMehlhorn
             }
 
             // Find the index within the left polygon where the shared edge ends (P0)
-            List<int> leftPoly = getPolygon(realEdge.LeftPoly);
+            int leftPolyIndex = getRemappedIndex(realEdge.LeftPoly);
+            List<int> leftPoly = tempPartitions[leftPolyIndex];
             int leftPolyStart = -1;
             for (int i = 0; i < leftPoly.Count; i++) {
                 int p = leftPoly[i];
@@ -138,14 +150,14 @@ public static class HertelMehlhorn
             }
 
             // Determine if the angle at the edge's P0 would become reflex if this edge were removed
-            Vector2 poly0LastEdge = input.Vertices[rightPoly.GetCircular(rightPolyStart - 1)] - input.Vertices[rightPoly.GetCircular(rightPolyStart - 2)];
-            Vector2 poly1FirstEdge = input.Vertices[leftPoly.GetCircular(leftPolyStart + 1)] - input.Vertices[leftPoly.GetCircular(leftPolyStart)];
-            bool p0Reflex = Vector3.Cross(poly0LastEdge, poly1FirstEdge).z > 0;
+            Vector2 rightPolyLastEdge = input.Vertices[rightPoly.GetCircular(rightPolyStart - 1)] - input.Vertices[rightPoly.GetCircular(rightPolyStart - 2)];
+            Vector2 leftPolyFirstEdge = input.Vertices[leftPoly.GetCircular(leftPolyStart + 1)] - input.Vertices[leftPoly.GetCircular(leftPolyStart)];
+            bool p0Reflex = Vector3.Cross(rightPolyLastEdge, leftPolyFirstEdge).z > 0;
 
             // Determine if the angle at the edge's P1 would become reflex if this edge were removed
-            Vector2 poly1LastEdge = input.Vertices[leftPoly.GetCircular(leftPolyStart - 1)] - input.Vertices[leftPoly.GetCircular(leftPolyStart - 2)];
-            Vector2 poly0FirstEdge = input.Vertices[rightPoly.GetCircular(rightPolyStart + 1)] - input.Vertices[rightPoly.GetCircular(rightPolyStart)];
-            bool p1Reflex = Vector3.Cross(poly1LastEdge, poly0FirstEdge).z > 0;
+            Vector2 leftPolyLastEdge = input.Vertices[leftPoly.GetCircular(leftPolyStart - 1)] - input.Vertices[leftPoly.GetCircular(leftPolyStart - 2)];
+            Vector2 rightPolyFirstEdge = input.Vertices[rightPoly.GetCircular(rightPolyStart + 1)] - input.Vertices[rightPoly.GetCircular(rightPolyStart)];
+            bool p1Reflex = Vector3.Cross(leftPolyLastEdge, rightPolyFirstEdge).z > 0;
 
             if (!p0Reflex && !p1Reflex) {
                 // Remove the edge and merge the two polygons since the result will be convex
@@ -166,9 +178,10 @@ public static class HertelMehlhorn
 
                 // Clear the left polygon
                 leftPoly.Clear();
-                
+                clearedPolys.Add(leftPolyIndex);
+
                 // Remap the left polygon index to match the right
-                polyRemapper[realEdge.LeftPoly] = polyRemapper[realEdge.RightPoly];
+                polyRemapper[leftPolyIndex] = rightPolyIndex;
             }
         }
 
