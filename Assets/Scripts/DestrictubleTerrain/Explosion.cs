@@ -1,7 +1,7 @@
 ﻿using ClipperLib;
-using DestrictubleTerrain;
-using DestrictubleTerrain.Clipping;
-using DestrictubleTerrain.Triangulation;
+using DestructibleTerrain;
+using DestructibleTerrain.Clipping;
+using DestructibleTerrain.Triangulation;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;

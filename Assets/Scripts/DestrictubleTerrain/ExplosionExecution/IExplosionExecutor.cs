@@ -1,12 +1,12 @@
-﻿using DestrictubleTerrain;
-using DestrictubleTerrain.Clipping;
-using DestrictubleTerrain.Destructible;
+﻿using DestructibleTerrain;
+using DestructibleTerrain.Clipping;
+using DestructibleTerrain.Destructible;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace DestrictubleTerrain.ExplosionExecution
+namespace DestructibleTerrain.ExplosionExecution
 {
     public interface IExplosionExecutor
     {

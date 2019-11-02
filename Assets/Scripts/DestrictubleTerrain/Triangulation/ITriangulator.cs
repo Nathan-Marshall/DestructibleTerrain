@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DestrictubleTerrain.Triangulation
+namespace DestructibleTerrain.Triangulation
 {
     public interface ITriangulator
     {

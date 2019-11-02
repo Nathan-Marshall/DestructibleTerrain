@@ -1,14 +1,14 @@
-﻿using DestrictubleTerrain;
-using DestrictubleTerrain.Clipping;
-using DestrictubleTerrain.Destructible;
-using DestrictubleTerrain.Triangulation;
+﻿using DestructibleTerrain;
+using DestructibleTerrain.Clipping;
+using DestructibleTerrain.Destructible;
+using DestructibleTerrain.Triangulation;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace DestrictubleTerrain.ExplosionExecution
+namespace DestructibleTerrain.ExplosionExecution
 {
     // This sends all explosions and polygons to the subtractor at once, but cannot perform bounds checking.
     public sealed class TrueBulkExplosionExecutor : IExplosionExecutor

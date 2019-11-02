@@ -9,7 +9,7 @@ using TriangleNet.Topology;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace DestrictubleTerrain.Triangulation
+namespace DestructibleTerrain.Triangulation
 {
     public class TriangleNetAdapter : ITriangulator {
         private static readonly Lazy<TriangleNetAdapter> lazyInstance = new Lazy<TriangleNetAdapter>(() => new TriangleNetAdapter());

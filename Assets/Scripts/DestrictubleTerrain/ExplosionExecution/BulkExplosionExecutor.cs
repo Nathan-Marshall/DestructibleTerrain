@@ -1,14 +1,14 @@
-﻿using DestrictubleTerrain;
-using DestrictubleTerrain.Clipping;
-using DestrictubleTerrain.Destructible;
-using DestrictubleTerrain.Triangulation;
+﻿using DestructibleTerrain;
+using DestructibleTerrain.Clipping;
+using DestructibleTerrain.Destructible;
+using DestructibleTerrain.Triangulation;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace DestrictubleTerrain.ExplosionExecution
+namespace DestructibleTerrain.ExplosionExecution
 {
     // This class iterates explosions still (so that it can do bounds checking) but takes advantage of
     // IPolygonSubtractor's SubtractBulk to handle multiple polygons at once.

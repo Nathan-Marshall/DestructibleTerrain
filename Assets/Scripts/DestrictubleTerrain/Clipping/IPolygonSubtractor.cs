@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DestrictubleTerrain.Clipping
+namespace DestructibleTerrain.Clipping
 {
     public interface IPolygonSubtractor
     {

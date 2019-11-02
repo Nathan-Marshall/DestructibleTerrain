@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace DestrictubleTerrain.Clipping
+namespace DestructibleTerrain.Clipping
 {
     public sealed class ClipperAdapter : IPolygonSubtractor
     {

@@ -1,13 +1,13 @@
-﻿using DestrictubleTerrain;
-using DestrictubleTerrain.Clipping;
-using DestrictubleTerrain.Destructible;
+﻿using DestructibleTerrain;
+using DestructibleTerrain.Clipping;
+using DestructibleTerrain.Destructible;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace DestrictubleTerrain.ExplosionExecution
+namespace DestructibleTerrain.ExplosionExecution
 {
     // This class simply iterates all explosions and all polygons in O(n^2) time subtracting a single explosion from a
     // single polygon at a time, but does bounds checking to skip processing most polygons.
