@@ -1,4 +1,5 @@
 ﻿//Copyright (C) 2011 by Ivan Fratric
+//Copyright (C) 2019 by Nathan Marshall
 //
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -18,12 +19,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-using ClipperLib;
-using DestrictubleTerrain;
-using DestrictubleTerrain.Destructible;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+using DestructibleTerrain;
 using System.Linq;
 using UnityEngine;
 
@@ -513,26 +509,6 @@ public static class PolyPartitionHM
         return true;
     }
 
-    // Triangulates a list of polygons that may contain holes by ear clipping algorithm
-    // first calls RemoveHoles to get rid of the holes, and then Triangulate_EC for each resulting polygon
-    // time complexity: O(h*(n^2)), h is the number of holes, n is the number of vertices
-    // space complexity: O(n)
-    // params:
-    //    inpolys : a list of polygons to be triangulated (can contain holes)
-    //              vertices of all non-hole polys have to be in counter-clockwise order
-    //              vertices of all hole polys have to be in clockwise order
-    //    triangles : a list of triangles (result)
-    // Returns true on success, false on failure
-    public static bool Triangulate_EC(TPPLPolyList inpolys, out TPPLPolyList triangles) {
-        triangles = new TPPLPolyList();
-
-        if (!RemoveHoles(inpolys, out TPPLPolyList outpolys)) return false;
-        foreach (var poly in outpolys) {
-            if (!Triangulate_EC(poly, out triangles)) return false;
-        }
-        return true;
-    }
-
     // Partitions a polygon into convex polygons by using Hertel-Mehlhorn algorithm
     // the algorithm gives at most four times the number of parts as the optimal algorithm
     // however, in practice it works much better than that and often gives optimal partition
@@ -646,28 +622,6 @@ public static class PolyPartitionHM
         }
         
         parts = triangles;
-        return true;
-    }
-
-    // Partitions a list of polygons into convex parts by using Hertel-Mehlhorn algorithm
-    // the algorithm gives at most four times the number of parts as the optimal algorithm
-    // however, in practice it works much better than that and often gives optimal partition
-    // uses triangulation obtained by ear clipping as intermediate result
-    // time complexity O(n^2), n is the number of vertices
-    // space complexity: O(n)
-    // params:
-    //    inpolys : an input list of polygons to be partitioned
-    //              vertices of all non-hole polys have to be in counter-clockwise order
-    //              vertices of all hole polys have to be in clockwise order
-    //    parts : resulting list of convex polygons
-    // Returns true on success, false on failure
-    public static bool ConvexPartition_HM(TPPLPolyList inpolys, out TPPLPolyList parts) {
-        parts = new TPPLPolyList();
-
-        if (!RemoveHoles(inpolys, out TPPLPolyList outpolys)) return false;
-        foreach (var poly in outpolys) {
-            if (!ConvexPartition_HM(poly, out parts)) return false;
-        }
         return true;
     }
 }
