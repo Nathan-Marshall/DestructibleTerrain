@@ -85,11 +85,19 @@ namespace DestructibleTerrain.HertelMehlhorn
                 p => new Vector2(p.x, p.y)).Reverse().ToList()).ToList());
         }
 
-        public DTMesh Execute(DTMesh input) {
-            return null;
+        public DTMesh ExecuteToMesh(DTMesh input) {
+            return ExecuteToMesh(input.ToPolyGroup());
         }
 
-        public DTConvexPolygonGroup Execute(DTConvexPolygonGroup input) {
+        public DTMesh ExecuteToMesh(DTConvexPolygonGroup input) {
+            return ExecuteToPolyGroup(input).ToMesh();
+        }
+
+        public DTConvexPolygonGroup ExecuteToPolyGroup(DTMesh input) {
+            return ExecuteToPolyGroup(input.ToPolyGroup());
+        }
+
+        public DTConvexPolygonGroup ExecuteToPolyGroup(DTConvexPolygonGroup input) {
             HertelMehlhorn(ToTPPLPolyList(input), out TPPLPolyList output);
             return ToPolyGroup(output);
         }
@@ -311,16 +319,4 @@ namespace DestructibleTerrain.HertelMehlhorn
             return NumPoints >= 3;
         }
     }
-
-    class PartitionVertex
-    {
-        public bool isActive;
-        public bool isConvex;
-        public bool isEar;
-
-        public TPPLPoint p;
-        public float angle;
-        public PartitionVertex previous;
-        public PartitionVertex next;
-    };
 }

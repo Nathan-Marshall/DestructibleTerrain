@@ -89,7 +89,7 @@ namespace DestructibleTerrain.HertelMehlhorn
 
 
         // Note: allows output to have consecutive colinear edges in a partition
-        public DTMesh Execute(DTMesh input) {
+        public DTMesh ExecuteToMesh(DTMesh input) {
             List<int> clearedPolys = new List<int>();
             Dictionary<SimplifiedEdge, Edge> realEdges = new Dictionary<SimplifiedEdge, Edge>();
 
@@ -204,8 +204,16 @@ namespace DestructibleTerrain.HertelMehlhorn
                 tempPartitions.Where(partition => partition.Count > 0).ToList());
         }
 
-        public DTConvexPolygonGroup Execute(DTConvexPolygonGroup input) {
-            return null;
+        public DTMesh ExecuteToMesh(DTConvexPolygonGroup input) {
+            return ExecuteToMesh(input.ToMesh());
+        }
+
+        public DTConvexPolygonGroup ExecuteToPolyGroup(DTMesh input) {
+            return ExecuteToMesh(input).ToPolyGroup();
+        }
+
+        public DTConvexPolygonGroup ExecuteToPolyGroup(DTConvexPolygonGroup input) {
+            return ExecuteToPolyGroup(input.ToMesh());
         }
     }
 }
