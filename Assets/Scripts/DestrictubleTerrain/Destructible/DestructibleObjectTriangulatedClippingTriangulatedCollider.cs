@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    public class DestructibleObjectTriangulatedClippingTriangulatedCollider : DestructibleObject
+    public abstract class DestructibleObjectTriangulatedClippingTriangulatedCollider : DestructibleObject
     {
         private DTConvexPolygonGroup dtPolyGroup;
 
@@ -19,7 +19,7 @@ namespace DestructibleTerrain.Destructible
 
             // Assign default polygon when this component is attached in the editor
             if (dtPolyGroup == null && Application.isEditor) {
-                ApplyPolygonList(TriangleNetTriangulator.Instance.PolygonToTriangleList(new DTPolygon(
+                ApplyPolygonList(GetTriangulator().PolygonToTriangleList(new DTPolygon(
                     new List<Vector2> {
                         new Vector2(-1, -1),
                         new Vector2(-1,  1),
@@ -46,7 +46,7 @@ namespace DestructibleTerrain.Destructible
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
             DTProfileMarkers.Triangulation.Begin();
-            dtPolyGroup = DTUtility.TriangulateAll(clippedPolygonList, TriangleNetTriangulator.Instance);
+            dtPolyGroup = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
             DTProfileMarkers.Triangulation.End();
 
             // Collider from polygon

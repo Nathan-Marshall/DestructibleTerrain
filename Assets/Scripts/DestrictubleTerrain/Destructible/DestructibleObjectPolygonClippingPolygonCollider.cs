@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    public class DestructibleObjectPolygonClippingPolygonCollider : DestructibleObject
+    public abstract class DestructibleObjectPolygonClippingPolygonCollider : DestructibleObject
     {
         private DTPolygon dtPolygon;
 
@@ -58,7 +58,7 @@ namespace DestructibleTerrain.Destructible
 
             // Create mesh from triangulated polygon
             DTProfileMarkers.Triangulation.Begin();
-            DTMesh dtMesh = TriangleNetTriangulator.Instance.PolygonToMesh(dtPolygon);
+            DTMesh dtMesh = GetTriangulator().PolygonToMesh(dtPolygon);
             DTProfileMarkers.Triangulation.End();
             ApplyRenderMesh(dtMesh);
         }

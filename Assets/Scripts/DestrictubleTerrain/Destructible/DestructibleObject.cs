@@ -105,5 +105,7 @@ namespace DestructibleTerrain.Destructible
                 triangles = dtMesh.Partitions.SelectMany(t => t.GetRange(0, 3)).ToArray()
             };
         }
+
+        protected abstract ITriangulator GetTriangulator();
     }
 }
