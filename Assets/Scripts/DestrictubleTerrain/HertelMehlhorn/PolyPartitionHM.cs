@@ -39,52 +39,6 @@ namespace DestructibleTerrain.HertelMehlhorn
         private PolyPartitionHM() { }
 
 
-        // Helper functions
-        private static bool IsConvex(TPPLPoint p1, TPPLPoint p2, TPPLPoint p3) {
-            return (p3.y - p1.y) * (p2.x - p1.x) - (p3.x - p1.x) * (p2.y - p1.y) > 0;
-        }
-
-        private static TPPLPolyList ToTPPLPolyList(DTPolygon dtPoly) {
-            TPPLPolyList polyList = new TPPLPolyList();
-
-            TPPLPoly tpplContour = new TPPLPoly(dtPoly.Contour.Count);
-            for (int i = 0; i < dtPoly.Contour.Count; i++) {
-                tpplContour[dtPoly.Contour.Count - 1 - i] = new TPPLPoint(dtPoly.Contour[i]);
-            }
-            polyList.Add(tpplContour);
-
-            foreach (var hole in dtPoly.Holes) {
-                TPPLPoly tpplHole = new TPPLPoly(hole.Count);
-                tpplHole.SetHole(true);
-                for (int i = 0; i < hole.Count; i++) {
-                    tpplHole[hole.Count - 1 - i] = new TPPLPoint(hole[i]);
-                }
-                polyList.Add(tpplHole);
-            }
-
-            return polyList;
-        }
-
-        private static TPPLPolyList ToTPPLPolyList(DTConvexPolygonGroup polyGroup) {
-            TPPLPolyList polyList = new TPPLPolyList();
-
-            foreach (var poly in polyGroup) {
-                TPPLPoly tpplHole = new TPPLPoly(poly.Count);
-                tpplHole.SetHole(true);
-                for (int i = 0; i < poly.Count; i++) {
-                    tpplHole[poly.Count - 1 - i] = new TPPLPoint(poly[i]);
-                }
-                polyList.Add(tpplHole);
-            }
-
-            return polyList;
-        }
-
-        private static DTConvexPolygonGroup ToPolyGroup(TPPLPolyList polyList) {
-            return new DTConvexPolygonGroup(polyList.Select(tpplPoly => tpplPoly.GetPoints().Select(
-                p => new Vector2(p.x, p.y)).Reverse().ToList()).ToList());
-        }
-
         public DTMesh ExecuteToMesh(DTMesh input) {
             return ExecuteToMesh(input.ToPolyGroup());
         }
@@ -98,8 +52,14 @@ namespace DestructibleTerrain.HertelMehlhorn
         }
 
         public DTConvexPolygonGroup ExecuteToPolyGroup(DTConvexPolygonGroup input) {
-            HertelMehlhorn(ToTPPLPolyList(input), out TPPLPolyList output);
-            return ToPolyGroup(output);
+            HertelMehlhorn(input.ToTPPLPolyList(), out TPPLPolyList output);
+            return output.ToPolyGroup();
+        }
+
+
+        // Helper functions
+        private static bool IsConvex(Vector2 p1, Vector2 p2, Vector2 p3) {
+            return (p3.y - p1.y) * (p2.x - p1.x) - (p3.x - p1.x) * (p2.y - p1.y) > 0;
         }
 
         // Converts a polygon triangulation to a decomposition of fewer convex partitions by removing
@@ -114,19 +74,18 @@ namespace DestructibleTerrain.HertelMehlhorn
         //    parts : resulting list of convex polygons
         // Returns true on success, false on failure
         private static bool HertelMehlhorn(TPPLPolyList triangles, out TPPLPolyList parts) {
-            parts = new TPPLPolyList();
-
-            int i12 = 0;
-            int i13 = 0;
+            int i11;
+            int i12;
+            int i13;
             int i21 = 0;
             int i22 = 0;
-            int i23 = 0;
-            TPPLPoint d1, d2, p1, p2, p3;
+            int i23;
+            Vector2 d1, d2, p1, p2, p3;
             bool isdiagonal;
 
             for (int iter1 = 0; iter1 < triangles.Count; iter1++) {
                 TPPLPoly poly1 = triangles[iter1];
-                for (int i11 = 0; i11 < poly1.NumPoints; i11++) {
+                for (i11 = 0; i11 < poly1.NumPoints; i11++) {
                     d1 = poly1.GetPoint(i11);
                     i12 = (i11 + 1) % poly1.NumPoints;
                     d2 = poly1.GetPoint(i12);
@@ -197,74 +156,10 @@ namespace DestructibleTerrain.HertelMehlhorn
         }
     }
 
-    // 2D point structure
-    class TPPLPoint
-    {
-        public float x;
-        public float y;
-        // User-specified vertex identifier.  Note that this isn't used internally
-        // by the library, but will be faithfully copied around.
-        public readonly int id;
-
-        public TPPLPoint(Vector2 p = new Vector2(), int id = -1) {
-            x = p.x;
-            y = p.y;
-            this.id = id;
-        }
-
-        public static TPPLPoint operator +(TPPLPoint p1, TPPLPoint p2) {
-            return new TPPLPoint() {
-                x = p1.x + p2.x,
-                y = p1.y + p2.y
-            };
-        }
-
-        public static TPPLPoint operator -(TPPLPoint p1, TPPLPoint p2) {
-            return new TPPLPoint() {
-                x = p1.x - p2.x,
-                y = p1.y - p2.y
-            };
-        }
-
-        public static TPPLPoint operator *(TPPLPoint p, float f) {
-            return new TPPLPoint() {
-                x = p.x * f,
-                y = p.y * f
-            };
-        }
-
-        public static TPPLPoint operator /(TPPLPoint p, float f) {
-            return new TPPLPoint() {
-                x = p.x / f,
-                y = p.y / f
-            };
-        }
-
-        public static bool operator ==(TPPLPoint p1, TPPLPoint p2) {
-            return (p1.x == p2.x) && (p1.y == p2.y);
-        }
-
-        public static bool operator !=(TPPLPoint p1, TPPLPoint p2) {
-            return !(p1 == p2);
-        }
-
-        public override bool Equals(object o) {
-            // Check for null and compare run-time types.
-            if (o == null || !GetType().Equals(o.GetType())) {
-                return false;
-            }
-            return this == (TPPLPoint)o;
-        }
-
-        public override int GetHashCode() {
-            return x.GetHashCode() ^ y.GetHashCode();
-        }
-    };
-
     // Polygon implemented as an array of points with a 'hole' flag
     class TPPLPoly
     {
-        private TPPLPoint[] points;
+        private Vector2[] points;
         private bool hole;
 
         public int NumPoints {
@@ -273,7 +168,7 @@ namespace DestructibleTerrain.HertelMehlhorn
 
         // Constructors/destructors
         public TPPLPoly() {
-            points = new TPPLPoint[0];
+            points = new Vector2[0];
             hole = false;
         }
 
@@ -283,13 +178,13 @@ namespace DestructibleTerrain.HertelMehlhorn
         }
 
         public TPPLPoly(int numpoints) {
-            points = new TPPLPoint[numpoints];
+            points = new Vector2[numpoints];
             hole = false;
         }
 
         // Creates a triangle with points p1,p2,p3
-        public TPPLPoly(TPPLPoint p1, TPPLPoint p2, TPPLPoint p3) {
-            points = new TPPLPoint[] { p1, p2, p3 };
+        public TPPLPoly(Vector2 p1, Vector2 p2, Vector2 p3) {
+            points = new Vector2[] { p1, p2, p3 };
             hole = false;
         }
 
@@ -301,15 +196,15 @@ namespace DestructibleTerrain.HertelMehlhorn
             this.hole = hole;
         }
 
-        public TPPLPoint GetPoint(int i) {
+        public Vector2 GetPoint(int i) {
             return points[i];
         }
 
-        public TPPLPoint[] GetPoints() {
+        public Vector2[] GetPoints() {
             return points;
         }
 
-        public TPPLPoint this[int i] {
+        public Vector2 this[int i] {
             get => points[i];
             set { points[i] = value; }
         }
@@ -317,6 +212,29 @@ namespace DestructibleTerrain.HertelMehlhorn
         //checks whether a polygon is valid or not
         public bool Valid() {
             return NumPoints >= 3;
+        }
+    }
+
+    static class ExtensionsForPolyPartitionHM
+    {
+        public static TPPLPolyList ToTPPLPolyList(this DTConvexPolygonGroup polyGroup) {
+            TPPLPolyList polyList = new TPPLPolyList();
+
+            foreach (var poly in polyGroup) {
+                TPPLPoly tpplHole = new TPPLPoly(poly.Count);
+                tpplHole.SetHole(true);
+                for (int i = 0; i < poly.Count; i++) {
+                    tpplHole[poly.Count - 1 - i] = poly[i];
+                }
+                polyList.Add(tpplHole);
+            }
+
+            return polyList;
+        }
+
+        public static DTConvexPolygonGroup ToPolyGroup(this TPPLPolyList polyList) {
+            return new DTConvexPolygonGroup(polyList.Select(tpplPoly => tpplPoly.GetPoints().Select(
+                p => new Vector2(p.x, p.y)).Reverse().ToList()).ToList());
         }
     }
 }

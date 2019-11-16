@@ -228,7 +228,7 @@ namespace DestructibleTerrain.Clipping
         }
     }
 
-    static class ExtensionsForClipperAdapter
+    static class ExtensionsForClipperSubtractor
     {
         private const long FixedDecimalConversion = 10000000;
 
