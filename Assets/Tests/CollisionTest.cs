@@ -12,8 +12,22 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.TestTools;
 
+using DO_Poly_Poly = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolygonCollider;
+using DO_Poly_Tri = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingTriangulatedCollider;
+using DO_Tri_Tri = DestructibleTerrain.Destructible.DestructibleObjectTriangulatedClippingTriangulatedCollider;
+using DO_Poly_CHM = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingCustomHMCollider;
+using DO_Poly_PPHM = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolyPartitionHMCollider;
+
 public static class DestructibleTerrainTests
 {
+    private static IExplosionExecutor IterEE = IterativeExplosionExecutor.Instance;
+    private static IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
+    private static IExplosionExecutor TrueEE = TrueBulkExplosionExecutor.Instance;
+
+    private static IPolygonSubtractor ClipperSub = ClipperAdapter.Instance;
+
+    private static float fdt = Time.fixedDeltaTime;
+
     public static class ProfilerMarkers {
         public static readonly string Namespace = "DestructibleTerrainTests";
 
@@ -156,7 +170,7 @@ public static class DestructibleTerrainTests
         CleanUp();
     }
 
-    public static IEnumerator ContinuousExplosionTest<T> (IExplosionExecutor explosionExecutor, IPolygonSubtractor subtractor,
+    public static IEnumerator ContinuousExplosionTest<T> (IExplosionExecutor ee, IPolygonSubtractor sub,
             int numExplosions, float explosionRadius, float explosionInterval, bool hasHoles, float radius, int numEdges,
             int columns, int rows, int warmupFrames, int captureFrames) where T : DestructibleObject {
         // Set a constant seed so that we get the same results every time
@@ -178,7 +192,7 @@ public static class DestructibleTerrainTests
         // To be called every fixed update;
         // Generates a number of explosions every time the timer reaches a fixed interval.
         void explosionGenerator () {
-            explosionTimer += Time.fixedDeltaTime;
+            explosionTimer += fdt;
             List<Explosion> explosions = new List<Explosion>();
             while (explosionTimer > explosionInterval) {
                 explosionTimer -= explosionInterval;
@@ -189,7 +203,7 @@ public static class DestructibleTerrainTests
             }
 
             ProfilerMarkers.ProcessExplosions.Begin();
-            explosionExecutor.ExecuteExplosions(explosions, DestructibleObject.FindAll(), subtractor);
+            ee.ExecuteExplosions(explosions, DestructibleObject.FindAll(), sub);
             ProfilerMarkers.ProcessExplosions.End();
         }
 
@@ -202,8 +216,8 @@ public static class DestructibleTerrainTests
         CleanUp();
     }
 
-    public static IEnumerator OneTimeExplosionTest<T> (IExplosionExecutor explosionExecutor, IPolygonSubtractor subtractor,
-            int numExplosions, float explosionRadius, float explosionInterval, bool hasHoles, float radius, int numEdges,
+    public static IEnumerator OneTimeExplosionTest<T> (IExplosionExecutor ee, IPolygonSubtractor sub,
+            int numExplosions, float explosionRadius, bool hasHoles, float radius, int numEdges,
             int columns, int rows) where T : DestructibleObject {
         // Set a constant seed so that we get the same results every time
         UnityEngine.Random.InitState(12345);
@@ -228,7 +242,7 @@ public static class DestructibleTerrainTests
 
         using (Measure.ProfilerMarkers(ProfilerMarkers.SampleGroupDefinitions)) {
             ProfilerMarkers.ProcessExplosions.Begin();
-            explosionExecutor.ExecuteExplosions(explosions, DestructibleObject.FindAll(), subtractor);
+            ee.ExecuteExplosions(explosions, DestructibleObject.FindAll(), sub);
             ProfilerMarkers.ProcessExplosions.End();
         }
         yield return null;
@@ -254,554 +268,288 @@ public static class DestructibleTerrainTests
         }
     }
 
+
+
+    public static IEnumerator CollisionTestSolids100<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(false, 1.0f, 24, 10, 10, 100, 200);
+    }
+
+    public static IEnumerator CollisionTestSolids200<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(false, 1.0f, 24, 20, 10, 100, 200);
+    }
+
+    public static IEnumerator CollisionTestSolids400<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(false, 1.0f, 24, 40, 10, 100, 200);
+    }
+
+    public static IEnumerator CollisionTestRings100<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(true, 1.0f, 24, 10, 10, 100, 200);
+    }
+
+    public static IEnumerator CollisionTestRings200<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(true, 1.0f, 24, 20, 10, 100, 200);
+    }
+
+    public static IEnumerator CollisionTestRings400<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(true, 1.0f, 24, 40, 10, 100, 200);
+    }
+
+    public static IEnumerator ContinuousExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
+            where T : DestructibleObject {
+        yield return ContinuousExplosionTest<DO_Poly_Poly>(ee, sub, 1, 1, fdt, true, 1.0f, 24, 10, 10, 100, 200);
+    }
+
+    public static IEnumerator OneTimeExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
+            where T : DestructibleObject {
+        yield return OneTimeExplosionTest<T>(ee, sub, 100, 1, true, 1.0f, 24, 10, 10);
+    }
+
+    public static IEnumerator OneTimeExplosionTestLargeComplexRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
+            where T : DestructibleObject {
+        yield return OneTimeExplosionTest<T>(ee, sub, 10, 1, true, 10.0f, 240, 2, 1);
+    }
+
+
+
     public static class PureCollision
     {
-        public static class PolygonClippingPolygonCollider
+        public static class Poly_Poly
         {
             //[UnityTest, Performance]
-            public static IEnumerator Solids100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(false, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Poly_Poly>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Solids200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(false, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids200() { yield return CollisionTestSolids200<DO_Poly_Poly>(); }
             [UnityTest, Performance]
-            public static IEnumerator Solids400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(false, 1.0f, 24, 40, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids400() { yield return CollisionTestSolids400<DO_Poly_Poly>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings100() { yield return CollisionTestRings100<DO_Poly_Poly>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(true, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings200() { yield return CollisionTestRings200<DO_Poly_Poly>(); }
             [UnityTest, Performance]
-            public static IEnumerator Rings400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolygonCollider>(true, 1.0f, 24, 40, 10, 100, 200);
-            }
+            public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Poly_Poly>(); }
         }
 
-        public static class PolygonClippingTriangulatedCollider
+        public static class Poly_Tri
         {
             //[UnityTest, Performance]
-            public static IEnumerator Solids100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(false, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Poly_Tri>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Solids200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(false, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids200() { yield return CollisionTestSolids200<DO_Poly_Tri>(); }
             [UnityTest, Performance]
-            public static IEnumerator Solids400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(false, 1.0f, 24, 40, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids400() { yield return CollisionTestSolids400<DO_Poly_Tri>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings100() { yield return CollisionTestRings100<DO_Poly_Tri>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(true, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings200() { yield return CollisionTestRings200<DO_Poly_Tri>(); }
             [UnityTest, Performance]
-            public static IEnumerator Rings400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingTriangulatedCollider>(true, 1.0f, 24, 40, 10, 100, 200);
-            }
+            public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Poly_Tri>(); }
         }
 
-        public static class TriangulatedClippingTriangulatedCollider
+        public static class Tri_Tri
         {
             //[UnityTest, Performance]
-            public static IEnumerator Solids100() {
-                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(false, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Tri_Tri>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Solids200() {
-                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(false, 1.0f, 24, 20, 10, 100, 200);
-            }
-
-            [UnityTest, Performance]
-            public static IEnumerator Solids400() {
-                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(false, 1.0f, 24, 40, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids200() { yield return CollisionTestSolids200<DO_Tri_Tri>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings100() {
-                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids400() { yield return CollisionTestSolids400<DO_Tri_Tri>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings200() {
-                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 1.0f, 24, 20, 10, 100, 200);
-            }
-
-            [UnityTest, Performance]
-            public static IEnumerator Rings400() {
-                yield return PhysicsTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(true, 1.0f, 24, 40, 10, 100, 200);
-            }
+            public static IEnumerator Rings100() { yield return CollisionTestRings100<DO_Tri_Tri>(); }
+            //[UnityTest, Performance]
+            public static IEnumerator Rings200() { yield return CollisionTestRings200<DO_Tri_Tri>(); }
+            //[UnityTest, Performance]
+            public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Tri_Tri>(); }
         }
 
-        public static class PolygonClippingCustomHMCollider
+        public static class Poly_CHM
         {
             //[UnityTest, Performance]
-            public static IEnumerator Solids100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingCustomHMCollider>(false, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Poly_CHM>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Solids200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingCustomHMCollider>(false, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids200() { yield return CollisionTestSolids200<DO_Poly_CHM>(); }
             [UnityTest, Performance]
-            public static IEnumerator Solids400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingCustomHMCollider>(false, 1.0f, 24, 40, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids400() { yield return CollisionTestSolids400<DO_Poly_CHM>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingCustomHMCollider>(true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings100() { yield return CollisionTestRings100<DO_Poly_CHM>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingCustomHMCollider>(true, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings200() { yield return CollisionTestRings200<DO_Poly_CHM>(); }
             [UnityTest, Performance]
-            public static IEnumerator Rings400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingCustomHMCollider>(true, 1.0f, 24, 40, 10, 100, 200);
-            }
+            public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Poly_CHM>(); }
         }
 
-        public static class PolygonClippingPolyPartitionHMCollider
+        public static class Poly_PPHM
         {
             //[UnityTest, Performance]
-            public static IEnumerator Solids100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(false, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Poly_PPHM>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Solids200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(false, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids200() { yield return CollisionTestSolids200<DO_Poly_PPHM>(); }
             [UnityTest, Performance]
-            public static IEnumerator Solids400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(false, 1.0f, 24, 40, 10, 100, 200);
-            }
-
+            public static IEnumerator Solids400() { yield return CollisionTestSolids400<DO_Poly_PPHM>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings100() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings100() { yield return CollisionTestRings100<DO_Poly_PPHM>(); }
             //[UnityTest, Performance]
-            public static IEnumerator Rings200() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(true, 1.0f, 24, 20, 10, 100, 200);
-            }
-
+            public static IEnumerator Rings200() { yield return CollisionTestRings200<DO_Poly_PPHM>(); }
             [UnityTest, Performance]
-            public static IEnumerator Rings400() {
-                yield return PhysicsTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(true, 1.0f, 24, 40, 10, 100, 200);
-            }
+            public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Poly_PPHM>(); }
         }
     }
 
     public static class ExplosionPerFrameTests
     {
-        public static class PolygonClippingPolygonCollider
+        public static class Poly_Poly
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly> (IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingTriangulatedCollider
+        public static class Poly_Tri
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Tri>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Tri>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Tri>(TrueEE, ClipperSub); }
         }
 
-        public static class TriangulatedClippingTriangulatedCollider
+        public static class Tri_Tri
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingCustomHMCollider
+        public static class Poly_CHM
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_CHM>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_CHM>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_CHM>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingPolyPartitionHMCollider
+        public static class Poly_PPHM
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_PPHM>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
-
+            public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_PPHM>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return ContinuousExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 1, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_PPHM>(TrueEE, ClipperSub); }
         }
     }
 
     public static class OneTime100ExplosionTests
     {
-        public static class PolygonClippingPolygonCollider
+        public static class Poly_Poly
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider> (
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingTriangulatedCollider
+        public static class Poly_Tri
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider> (
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Tri>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider> (
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Tri>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider> (
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Tri>(TrueEE, ClipperSub); }
         }
 
-        public static class TriangulatedClippingTriangulatedCollider
+        public static class Tri_Tri
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider> (
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingCustomHMCollider
+        public static class Poly_CHM
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
-            [UnityTest, Performance]
-            public static IEnumerator IterativeClipperLargeObject() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 1, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_CHM>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_CHM>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_CHM>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingPolyPartitionHMCollider
+        public static class Poly_PPHM
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
-            [UnityTest, Performance]
-            public static IEnumerator IterativeClipperLargeObject() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 1, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_PPHM>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_PPHM>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 100, 1,
-                    Time.fixedDeltaTime, true, 1.0f, 24, 10, 10);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_PPHM>(TrueEE, ClipperSub); }
         }
     }
 
     public static class OneTimeLargeObjectExplosionTests
     {
-        public static class PolygonClippingPolygonCollider
+        public static class Poly_Poly
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolygonCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingTriangulatedCollider
+        public static class Poly_Tri
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Tri>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Tri>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingTriangulatedCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Tri>(TrueEE, ClipperSub); }
         }
 
-        public static class TriangulatedClippingTriangulatedCollider
+        public static class Tri_Tri
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectTriangulatedClippingTriangulatedCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingCustomHMCollider
+        public static class Poly_CHM
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_CHM>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_CHM>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingCustomHMCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_CHM>(TrueEE, ClipperSub); }
         }
 
-        public static class PolygonClippingPolyPartitionHMCollider
+        public static class Poly_PPHM
         {
             [UnityTest, Performance]
-            public static IEnumerator IterativeClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    IterativeExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_PPHM>(IterEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator BulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    BulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
-
+            public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_PPHM>(BulkEE, ClipperSub); }
             //[UnityTest, Performance]
-            public static IEnumerator TrueBulkClipper() {
-                yield return OneTimeExplosionTest<DestructibleObjectPolygonClippingPolyPartitionHMCollider>(
-                    TrueBulkExplosionExecutor.Instance, ClipperAdapter.Instance, 10, 1,
-                    Time.fixedDeltaTime, true, 10.0f, 240, 2, 1);
-            }
+            public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_PPHM>(TrueEE, ClipperSub); }
         }
     }
 }
