@@ -20,13 +20,11 @@ using DO_Poly_PPHM = DestructibleTerrain.Destructible.DestructibleObjectPolygonC
 
 public static class DestructibleTerrainTests
 {
-    private static IExplosionExecutor IterEE = IterativeExplosionExecutor.Instance;
-    private static IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
-    private static IExplosionExecutor TrueEE = TrueBulkExplosionExecutor.Instance;
+    private static readonly IExplosionExecutor IterEE = IterativeExplosionExecutor.Instance;
+    private static readonly IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
+    private static readonly IExplosionExecutor TrueEE = TrueBulkExplosionExecutor.Instance;
 
-    private static IPolygonSubtractor ClipperSub = ClipperAdapter.Instance;
-
-    private static float fdt = Time.fixedDeltaTime;
+    private static readonly IPolygonSubtractor ClipperSub = ClipperAdapter.Instance;
 
     public static class ProfilerMarkers {
         public static readonly string Namespace = "DestructibleTerrainTests";
@@ -192,7 +190,7 @@ public static class DestructibleTerrainTests
         // To be called every fixed update;
         // Generates a number of explosions every time the timer reaches a fixed interval.
         void explosionGenerator () {
-            explosionTimer += fdt;
+            explosionTimer += Time.fixedDeltaTime;
             List<Explosion> explosions = new List<Explosion>();
             while (explosionTimer > explosionInterval) {
                 explosionTimer -= explosionInterval;
@@ -296,7 +294,7 @@ public static class DestructibleTerrainTests
 
     public static IEnumerator ContinuousExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
             where T : DestructibleObject {
-        yield return ContinuousExplosionTest<DO_Poly_Poly>(ee, sub, 1, 1, fdt, true, 1.0f, 24, 10, 10, 100, 200);
+        yield return ContinuousExplosionTest<DO_Poly_Poly>(ee, sub, 1, 1, Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
     }
 
     public static IEnumerator OneTimeExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
