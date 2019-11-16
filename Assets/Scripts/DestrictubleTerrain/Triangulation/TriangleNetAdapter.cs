@@ -11,15 +11,15 @@ using UnityEngine.Assertions;
 
 namespace DestructibleTerrain.Triangulation
 {
-    public class TriangleNetAdapter : ITriangulator {
-        private static readonly Lazy<TriangleNetAdapter> lazyInstance = new Lazy<TriangleNetAdapter>(() => new TriangleNetAdapter());
+    public class TriangleNetTriangulator : ITriangulator {
+        private static readonly Lazy<TriangleNetTriangulator> lazyInstance = new Lazy<TriangleNetTriangulator>(() => new TriangleNetTriangulator());
 
         // Singleton intance
-        public static TriangleNetAdapter Instance {
+        public static TriangleNetTriangulator Instance {
             get { return lazyInstance.Value; }
         }
 
-        private TriangleNetAdapter() { }
+        private TriangleNetTriangulator() { }
 
         public DTMesh PolygonToMesh(DTPolygon subject) {
             // Format polygon input and execute

@@ -9,18 +9,18 @@ using UnityEngine.Assertions;
 
 namespace DestructibleTerrain.Clipping
 {
-    public sealed class ClipperAdapter : IPolygonSubtractor
+    public sealed class ClipperSubtractor : IPolygonSubtractor
     {
-        private static readonly Lazy<ClipperAdapter> lazyInstance = new Lazy<ClipperAdapter>(() => new ClipperAdapter());
+        private static readonly Lazy<ClipperSubtractor> lazyInstance = new Lazy<ClipperSubtractor>(() => new ClipperSubtractor());
 
         // Singleton intance
-        public static ClipperAdapter Instance {
+        public static ClipperSubtractor Instance {
             get { return lazyInstance.Value; }
         }
 
         private readonly Clipper clipper;
 
-        private ClipperAdapter() {
+        private ClipperSubtractor() {
             clipper = new Clipper();
         }
 

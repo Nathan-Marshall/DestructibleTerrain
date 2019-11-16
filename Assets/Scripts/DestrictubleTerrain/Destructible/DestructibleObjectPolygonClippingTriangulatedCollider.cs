@@ -54,7 +54,7 @@ namespace DestructibleTerrain.Destructible
             dtPolygon = dtPolygonList[0];
 
             DTProfileMarkers.Triangulation.Begin();
-            DTMesh dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
+            DTMesh dtMesh = TriangleNetTriangulator.Instance.PolygonToMesh(dtPolygon);
             DTProfileMarkers.Triangulation.End();
 
             // Collider from polygon

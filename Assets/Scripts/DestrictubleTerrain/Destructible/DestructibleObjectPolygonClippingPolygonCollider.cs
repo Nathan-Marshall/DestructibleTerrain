@@ -58,7 +58,7 @@ namespace DestructibleTerrain.Destructible
 
             // Create mesh from triangulated polygon
             DTProfileMarkers.Triangulation.Begin();
-            DTMesh dtMesh = TriangleNetAdapter.Instance.PolygonToMesh(dtPolygon);
+            DTMesh dtMesh = TriangleNetTriangulator.Instance.PolygonToMesh(dtPolygon);
             DTProfileMarkers.Triangulation.End();
             ApplyRenderMesh(dtMesh);
         }

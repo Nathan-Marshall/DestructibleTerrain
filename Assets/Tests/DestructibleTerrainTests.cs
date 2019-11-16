@@ -24,7 +24,7 @@ public static class DestructibleTerrainTests
     private static readonly IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
     private static readonly IExplosionExecutor TrueEE = TrueBulkExplosionExecutor.Instance;
 
-    private static readonly IPolygonSubtractor ClipperSub = ClipperAdapter.Instance;
+    private static readonly IPolygonSubtractor ClipperSub = ClipperSubtractor.Instance;
 
     public static class ProfilerMarkers {
         public static readonly string Namespace = "DestructibleTerrainTests";
