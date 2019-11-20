@@ -14,32 +14,11 @@ namespace DestructibleTerrain.Destructible
     {
         private DTPolygon dtPolygon;
 
-        protected override void Start() {
-            base.Start();
-
-            // Assign default polygon when this component is attached in the editor
-            if (dtPolygon == null && Application.isEditor) {
-                ApplyPolygonList(new List<DTPolygon>() {
-                    new DTPolygon(
-                        new List<Vector2> {
-                            new Vector2(-1, -1),
-                            new Vector2(-1,  1),
-                            new Vector2( 1,  1),
-                            new Vector2( 1, -1)
-                        },
-                        new List<List<Vector2>> {
-                            new List<Vector2> {
-                                new Vector2(-0.75f, -0.75f),
-                                new Vector2( 0.75f, -0.75f),
-                                new Vector2( 0.75f,  0.75f),
-                                new Vector2(-0.75f,  0.75f)
-                            }
-                        })
-                });
-            }
-        }
-
         public override List<DTPolygon> GetTransformedPolygonList() {
+            if (dtPolygon == null) {
+                return null;
+            }
+
             return new List<DTPolygon>() {
                 new DTPolygon(
                     dtPolygon.Contour.Select(TransformPoint).ToList(),

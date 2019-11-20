@@ -14,33 +14,13 @@ namespace DestructibleTerrain.Destructible
     {
         private DTConvexPolygonGroup dtPolyGroup;
 
-        protected override void Start() {
-            base.Start();
-
-            // Assign default polygon when this component is attached in the editor
-            if (dtPolyGroup == null && Application.isEditor) {
-                ApplyPolygonList(GetTriangulator().PolygonToTriangleList(new DTPolygon(
-                    new List<Vector2> {
-                        new Vector2(-1, -1),
-                        new Vector2(-1,  1),
-                        new Vector2( 1,  1),
-                        new Vector2( 1, -1)
-                    },
-                    new List<List<Vector2>> {
-                    new List<Vector2> {
-                        new Vector2(-0.75f, -0.75f),
-                        new Vector2( 0.75f, -0.75f),
-                        new Vector2( 0.75f,  0.75f),
-                        new Vector2(-0.75f,  0.75f)
-                    }
-                    })).ToPolygonList());
-            }
-        }
-
         public override List<DTPolygon> GetTransformedPolygonList() {
+            if (dtPolyGroup == null) {
+                return null;
+            }
+
             // Assume no holes in polygon list
-            return dtPolyGroup.Select(poly => new DTPolygon(
-                poly.Select(TransformPoint).ToList())).ToList();
+            return dtPolyGroup.Select(poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {

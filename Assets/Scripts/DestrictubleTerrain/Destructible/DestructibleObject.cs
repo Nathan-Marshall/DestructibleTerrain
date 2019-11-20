@@ -35,6 +35,27 @@ namespace DestructibleTerrain.Destructible
         protected virtual void Start() {
             tag = DestructibleObjectTag;
             GetComponent<Rigidbody2D>().useAutoMass = true;
+
+            // Assign default polygon when this component is attached in the editor
+            if (GetTransformedPolygonList() == null && Application.isEditor) {
+                ApplyPolygonList(new List<DTPolygon>() {
+                    new DTPolygon(
+                        new List<Vector2> {
+                            new Vector2(-1, -1),
+                            new Vector2(-1,  1),
+                            new Vector2( 1,  1),
+                            new Vector2( 1, -1)
+                        },
+                        new List<List<Vector2>> {
+                            new List<Vector2> {
+                                new Vector2(-0.75f, -0.75f),
+                                new Vector2( 0.75f, -0.75f),
+                                new Vector2( 0.75f,  0.75f),
+                                new Vector2(-0.75f,  0.75f)
+                            }
+                        })
+                });
+            }
         }
 
         public Vector2 TransformPoint(Vector2 p) {
