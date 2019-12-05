@@ -40,6 +40,19 @@ namespace DestructibleTerrain.Clipping
         VoronoiRegion
     }
 
+    struct Intersection
+    {
+        public Vector2 position;
+        public float at;
+        public float bt;
+
+        public Intersection(Vector2 position, float at, float bt) {
+            this.position = position;
+            this.at = at;
+            this.bt = bt;
+        }
+    }
+
     public sealed class YangSubtractor : IPolygonSubtractor
     {
         delegate bool BinarySearchDirectionCheck(int i);
@@ -92,6 +105,7 @@ namespace DestructibleTerrain.Clipping
             polyP = subject;
             polyQ = clippingPolygon;
             FindInitialState();
+
             Process();
 
             return null;
@@ -136,65 +150,112 @@ namespace DestructibleTerrain.Clipping
             switch (regionType) {
                 case RegionType.Edge: // intentional fall-through to RegionType.VoronoiRegion
                 case RegionType.VoronoiRegion:
+                    if (SegmentContains(S, Sn, Q)) {
+                        // VN1: Q is in S_Sn
 
+                        SetPt(Q);
+                        regionType = RegionType.Vertex;
+                        break;
+                    }
+                    else if (SegmentContains(S, Sn, Qn)) {
+                        // VN2: Qn is in S_Sn
 
-                    break;
+                        SetPt(Qn);
+                        regionType = RegionType.Vertex;
+                        break;
+                    }
+
+                    Intersection? qIntersection = SegmentSegmentIntersection(S, Sn, Q, Qn);
+                    if (qIntersection.HasValue) {
+                        // VN3: S_Sn intersects Q_Qn
+
+                        // This is the only case where we actually handle an intersection of the two polygons!
+
+                        break;
+                    }
+
+                    Intersection? nextVEIntersection = SegmentRayIntersection(S, Sn, Qn, (Qnn - Qn).CWPerp());
+                    if (nextVEIntersection.HasValue) {
+                        // VN4: S_Sn intersects VE(Qn)
+
+                        ++qIndex;
+                        break;
+                    }
+
+                    Intersection? VEIntersection = SegmentRayIntersection(S, Sn, Q, (Qn - Q).CWPerp());
+                    if (VEIntersection.HasValue) {
+                        // VN5: S_Sn intersects VE(Q)
+
+                        --qIndex;
+                        break;
+                    }
+                    else {
+                        // VN6: Otherwise
+
+                        ++pIndex;
+                        pt = 0;
+                        break;
+                    }
 
                 case RegionType.Vertex:
-                    AnglePosition snPrevAnglePosition = GetAnglePosition(Qp, Q, Q + (Qn - Q).CWPerp(), Sn);
                     Quadrant snQuad = Q.CalcQuadrant(Qn, Sn);
-
                     if (snQuad == Quadrant.SameDir || snQuad == Quadrant.CWForward) {
                         // V1: S_Sn overlaps with Q_Qn
                         // or V4: S_Sn is between Q_Qn and VE(Q)
 
                         regionType = RegionType.VoronoiRegion;
+                        break;
                     }
-                    else if (snPrevAnglePosition == AnglePosition.FirstEdge || snPrevAnglePosition == AnglePosition.Outside) {
+
+                    AnglePosition snPrevAnglePosition = GetAnglePosition(Qp, Q, Q + (Qn - Q).CWPerp(), Sn);
+                    if (snPrevAnglePosition == AnglePosition.FirstEdge || snPrevAnglePosition == AnglePosition.Outside) {
                         // V2: S_Sn overlaps with Qp_Q
                         // or V5: S_Sn is between Qp_Q and VE(Q)
 
                         --qIndex;
                         regionType = RegionType.VoronoiRegion;
+                        break;
                     }
                     else if (snQuad == Quadrant.CWPerp) {
                         // V3: S_Sn overlaps with VE(Q)
 
                         regionType = RegionType.VoronoiEdge;
+                        break;
                     }
                     else {
                         throw new Exception("Error: failed to handle case where S is on Q");
                     }
 
-                    break;
-
                 case RegionType.VoronoiEdge:
-                    float cross = (Sn - S).Cross((Qn - Q).CWPerp());
-
                     if (SegmentContains(S, Sn, Q)) {
                         // VE1: S_Sn contains Q
 
                         SetPt(Q);
                         regionType = RegionType.Vertex;
+                        break;
                     }
-                    else if (cross < 0) {
+
+                    float cross = (Sn - S).Cross((Qn - Q).CWPerp());
+                    if (cross < 0) {
                         // VE2: S_Sn x VE(Q) < 0
 
                         regionType = RegionType.VoronoiRegion;
+                        break;
                     }
                     else if (cross > 0) {
                         // VE3: S_Sn x VE(Q) < 0
 
                         --qIndex;
                         regionType = RegionType.VoronoiRegion;
-                    } else {
+                        break;
+                    }
+                    else {
                         // VE4: otherwise
 
                         ++pIndex;
                         pt = 0;
+                        break;
                     }
-
-                    break;
 
                 default: // intentional fall-through to RegionType.None
                 case RegionType.None:
@@ -300,10 +361,56 @@ namespace DestructibleTerrain.Clipping
             regionType = GetRegionType(Q, Qn, Qnn, S);
         }
 
-        private bool SegmentContains(Vector2 q0, Vector2 q1, Vector2 p) {
-            return p == q0
-                || p == q1
-                || ((p - q0).Dot(q1 - q0) == 1 && (p - q0).sqrMagnitude <= (q1 - q0).sqrMagnitude);
+        private bool SegmentContains(Vector2 a0, Vector2 a1, Vector2 b) {
+            return b == a0
+                || b == a1
+                || ((b - a0).Dot(a1 - a0) == 1 && (b - a0).sqrMagnitude <= (a1 - a0).sqrMagnitude);
+        }
+
+        private Intersection? SegmentSegmentIntersection(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 b1) {
+            // Starting from the formula,
+            // A0 + at*(A1 - A0) = B0 + bt*(B1 - B0)
+
+            // We can get values t and u like so:
+            // at = (B0 - Q0) x (B1 - B0) / (A1 - A0) x (B1 - B0)
+            // bt = (B0 - Q0) x (A1 - A0) / (A1 - A0) x (B1 - B0)
+
+            float diffCrossA = (b0 - a0).Cross(a1 - a0);
+            float diffCrossB = (b0 - a0).Cross(b1 - b0);
+            float aCrossB = (a1 - a0).Cross(b1 - b0);
+
+            float at = diffCrossB / aCrossB;
+            float bt = diffCrossA / aCrossB;
+
+            if (0 <= at && at <= 1 && 0 <= bt && bt <= 1) {
+                Vector2 intersectionPoint = a0 + at * (a1 - a0);
+                return new Intersection(intersectionPoint, at, bt);
+            } else {
+                return null;
+            }
+        }
+
+        private Intersection? SegmentRayIntersection(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 bDir) {
+            // Starting from the formula,
+            // A0 + at*(A1 - A0) = B0 + bt*(BDir)
+
+            // We can get values t and u like so:
+            // at = (B0 - A0) x (BDir) / (A1 - A0) x (BDir)
+            // bt = (B0 - A0) x (A1 - A0) / (A1 - A0) x (BDir)
+
+            float diffCrossA = (b0 - a0).Cross(a1 - a0);
+            float diffCrossB = (b0 - a0).Cross(bDir);
+            float aCrossB = (a1 - a0).Cross(bDir);
+
+            float at = diffCrossB / aCrossB;
+            float bt = diffCrossA / aCrossB;
+
+            if (0 <= at && at <= 1 && 0 <= bt) {
+                Vector2 intersectionPoint = a0 + at*(a1 - a0);
+                return new Intersection(intersectionPoint, at, bt);
+            } else {
+                return null;
+            }
         }
 
         private RegionType GetRegionType(Vector2 q, Vector2 qn, Vector2 qnn, Vector2 p) {
@@ -326,14 +433,14 @@ namespace DestructibleTerrain.Clipping
             }
         }
 
-        private AnglePosition GetAnglePosition(Vector2 q0, Vector2 q1, Vector2 q2, Vector2 p) {
-            float cross0 = (p - q0).Cross(q1 - q0);
-            float cross1 = (p - q0).Cross(q2 - q1);
+        private AnglePosition GetAnglePosition(Vector2 a0, Vector2 a1, Vector2 a2, Vector2 b) {
+            float cross0 = (b - a0).Cross(a1 - a0);
+            float cross1 = (b - a0).Cross(a2 - a1);
 
-            if (p == q1) {
+            if (b == a1) {
                 return AnglePosition.Joint;
             }
-            else if ((q1 - q0).Cross(q2 - q1) > 0) {
+            else if ((a1 - a0).Cross(a2 - a1) > 0) {
                 // If angle wraps ccw (interior angle less than pi), then both crosses need to be positive to be inside
                 if (cross0 > 0 && cross1 > 0) {
                     return AnglePosition.Inside;
