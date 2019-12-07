@@ -194,7 +194,11 @@ namespace DestructibleTerrain.Clipping
         }
 
         public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
-            return null;
+            List<List<List<DTPolygon>>> outputPolyGroupGroups = new List<List<List<DTPolygon>>>();
+            foreach (IEnumerable<DTPolygon> inputPolyGroup in inputPolyGroups) {
+                outputPolyGroupGroups.Add(SubtractPolyGroup(inputPolyGroup, clippingPolygons));
+            }
+            return outputPolyGroupGroups;
         }
 
         // Note: does not verify if the polygon is convex, but checks that there are at least 3 vertices, no holes, and
