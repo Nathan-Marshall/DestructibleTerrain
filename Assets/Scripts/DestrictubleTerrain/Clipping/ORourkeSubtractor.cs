@@ -175,13 +175,22 @@ namespace DestructibleTerrain.Clipping
         }
         
         public List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons) {
+            List<List<DTPolygon>> outputPolyGroups = new List<List<DTPolygon>>(inputPolyGroup.Select(
+                    poly => new List<DTPolygon>() { poly }));
+            int i = 0;
             foreach (DTPolygon inputPoly in inputPolyGroup) {
-                List<DTPolygon> outputPolyGroup = new List<DTPolygon>();
+                List<DTPolygon> workingPolyGroup = outputPolyGroups[i];
                 foreach (DTPolygon clippingPoly in clippingPolygons) {
-                    Subtract(inputPoly, clippingPoly);
+                    List<DTPolygon> newWorkingPolyGroup = new List<DTPolygon>();
+                    foreach (DTPolygon workingPoly in workingPolyGroup) {
+                        newWorkingPolyGroup.AddRange(Subtract(workingPoly, clippingPoly));
+                    }
+                    workingPolyGroup = newWorkingPolyGroup;
                 }
+                outputPolyGroups[i] = workingPolyGroup;
+                ++i;
             }
-            return null;
+            return outputPolyGroups;
         }
 
         public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
