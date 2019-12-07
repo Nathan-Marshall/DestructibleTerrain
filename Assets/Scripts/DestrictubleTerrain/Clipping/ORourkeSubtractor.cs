@@ -11,36 +11,6 @@ namespace DestructibleTerrain.Clipping
 {
     public sealed class ORourkeSubtractor : IPolygonSubtractor
     {
-        struct Intersection
-        {
-            public Vector2 position;
-            public float at;
-            public float bt;
-
-            public Intersection(Vector2 position, float at, float bt) {
-                this.position = position;
-                this.at = at;
-                this.bt = bt;
-            }
-        }
-
-        struct ORourkeIntersection
-        {
-            public Vector2 position;
-            public int pIndex;
-            public int qIndex;
-            public float pt;
-            public float qt;
-
-            public ORourkeIntersection(Vector2 position, int pIndex, int qIndex, float pt, float qt) {
-                this.position = position;
-                this.pIndex = pIndex;
-                this.qIndex = qIndex;
-                this.pt = pt;
-                this.qt = qt;
-            }
-        }
-
         delegate bool BinarySearchDirectionCheck(int i);
 
         private static readonly Lazy<ORourkeSubtractor> lazyInstance = new Lazy<ORourkeSubtractor>(() => new ORourkeSubtractor());
@@ -52,7 +22,6 @@ namespace DestructibleTerrain.Clipping
 
         DTPolygon polyP;
         DTPolygon polyQ;
-        DTPolygon inside;
         int pIndex;
         int qIndex;
 
@@ -88,72 +57,121 @@ namespace DestructibleTerrain.Clipping
         public List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
             polyP = subject;
             polyQ = clippingPolygon;
-            inside = null;
             pIndex = 0;
             qIndex = 0;
+
+            // Set to either polyP or polyQ, and determines which of the active points (P or Q) is in the half plane
+            // of the other polygon's active segment
+            DTPolygon inside = null;
+
+            // The first entry intersection point of the first output polgon. If we return to this point, break the loop
+            Vector2? firstIntersection = null;
+
+            // A flag to indicate whether firstIntersection was found in the previous loop iteration.
+            // This is to handle a degenerate case, and is specifically mentioned in O'Rourke's paper.
             bool foundFirstIntersectionPreviousIteration = false;
-            bool finished = false;
-            List<Vector2> intersectionVertices = new List<Vector2>();
+
+            // List of disjoint output polygons after subtraction
+            List<DTPolygon> outputPolygons = new List<DTPolygon>();
+
+            // Working output polygon vertices
+            Vector2? polygonBegin = null;
+            List<Vector2> pVertices = new List<Vector2>();
+            List<Vector2> qVertices = new List<Vector2>();
 
             for (int i = 0; i <= 2*(polyP.Contour.Count + polyQ.Contour.Count); ++i) {
-                Intersection? intersection = PQIntersection();
+                Vector2? intersection = PQIntersection();
                 if (intersection.HasValue) {
-                    if (intersectionVertices.Count > 0 && intersection.Value.position == intersectionVertices[0]
+                    if (firstIntersection.HasValue && intersection.Value == firstIntersection.Value
                             && !foundFirstIntersectionPreviousIteration) {
-                        finished = true;
                         break;
-                    } else {
-                        intersectionVertices.Add(intersection.Value.position);
-                        foundFirstIntersectionPreviousIteration = intersectionVertices.Count == 1;
+                    }
+                    else {
+                        // This flag can be cleared, since we just checked it, and it should be checked only once after being set
+                        foundFirstIntersectionPreviousIteration = false;
+
                         inside = InHalfPlaneQ(P) ? polyP : polyQ;
+                        if (inside == polyP) {
+                            // Entry intersection point for output polygon
+                            polygonBegin = intersection.Value;
+
+                            // Keep track of this point if it is the entry intersection for the 1st output polygon
+                            if (!firstIntersection.HasValue) {
+                                firstIntersection = intersection.Value;
+                                foundFirstIntersectionPreviousIteration = true;
+                            }
+                        }
+                        else {
+                            // Exit intersection point for output polygon: construct output polygon
+                            DTPolygon poly = new DTPolygon();
+                            poly.Contour.Add(polygonBegin.Value);
+                            poly.Contour.AddRange(pVertices);
+                            poly.Contour.Add(intersection.Value);
+                            poly.Contour.AddRange(qVertices.AsEnumerable().Reverse());
+                            outputPolygons.Add(poly);
+
+                            // Clear working polygon vertices
+                            polygonBegin = null;
+                            pVertices.Clear();
+                            qVertices.Clear();
+                        }
                     }
                 }
+                else {
+                    // This flag can be cleared if there is no intersection this iteration
+                    foundFirstIntersectionPreviousIteration = false;
+                }
+
                 if (QEdge.Cross(PEdge) >= 0) {
                     if (InHalfPlaneQ(P)) {
                         // Advance Q
-                        if (inside == polyQ) {
-                            intersectionVertices.Add(Q);
-                            foundFirstIntersectionPreviousIteration = false;
+                        if (inside == polyQ && firstIntersection.HasValue) {
+                            qVertices.Add(Q);
                         }
                         ++qIndex;
                     } else {
                         // Advance P
-                        if (inside == polyP) {
-                            intersectionVertices.Add(P);
-                            foundFirstIntersectionPreviousIteration = false;
+                        if (inside == polyP && firstIntersection.HasValue) {
+                            pVertices.Add(P);
                         }
                         ++pIndex;
                     }
                 } else {
                     if (InHalfPlaneP(Q)) {
                         // Advance P
-                        if (inside == polyP) {
-                            intersectionVertices.Add(P);
-                            foundFirstIntersectionPreviousIteration = false;
+                        if (inside == polyP && firstIntersection.HasValue) {
+                            pVertices.Add(P);
                         }
                         ++pIndex;
                     }
                     else {
                         // Advance Q
-                        if (inside == polyP) {
-                            intersectionVertices.Add(Q);
-                            foundFirstIntersectionPreviousIteration = false;
+                        if (inside == polyP && firstIntersection.HasValue) {
+                            qVertices.Add(Q);
                         }
                         ++qIndex;
                     }
                 }
             }
-            if (!finished) {
+
+            // There were no intersections, so either one poly is entirely contained within the other, or there is no overlap at all
+            if (outputPolygons.Count == 0) {
                 if (polyQ.Contains(P)) {
-                    intersectionVertices.AddRange(polyP.Contour);
+                    // P is entirely within Q, so do nothing, the entire polygon has been subtracted!
                 } else if (polyP.Contains(Q)) {
-                    intersectionVertices.AddRange(polyQ.Contour);
+                    // Q is entirely within P, so output a copy of P, with Q (reversed) set as a hole
+                    outputPolygons.Add(new DTPolygon(
+                        new List<Vector2>(polyP.Contour),
+                        new List<List<Vector2>>() {
+                            polyQ.Contour.AsEnumerable().Reverse().ToList()
+                        }));
+                } else {
+                    // There is no overlap at all, so output a copy of P
+                    outputPolygons.Add(new DTPolygon(new List<Vector2>(polyP.Contour)));
                 }
             }
 
-            // intersectionVertices now contains all intersection vertices
-
-            return null;
+            return outputPolygons;
         }
         
         public List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons) {
@@ -199,11 +217,11 @@ namespace DestructibleTerrain.Clipping
             return QEdge.Cross(x - QPrev) >= 0;
         }
 
-        private Intersection? PQIntersection() {
+        private Vector2? PQIntersection() {
             return SegmentSegmentIntersection(PPrev, P, QPrev, Q);
         }
 
-        private Intersection? SegmentSegmentIntersection(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 b1) {
+        private Vector2? SegmentSegmentIntersection(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 b1) {
             // Starting from the formula,
             // A0 + at*(A1 - A0) = B0 + bt*(B1 - B0)
 
@@ -225,8 +243,7 @@ namespace DestructibleTerrain.Clipping
             float bt = diffCrossA / aCrossB;
 
             if (0 <= at && at <= 1 && 0 <= bt && bt <= 1) {
-                Vector2 intersectionPoint = a0 + at * (a1 - a0);
-                return new Intersection(intersectionPoint, at, bt);
+                return a0 + at * (a1 - a0);
             }
             else {
                 return null;
