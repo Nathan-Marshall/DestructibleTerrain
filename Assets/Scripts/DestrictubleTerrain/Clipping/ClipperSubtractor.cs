@@ -41,7 +41,7 @@ namespace DestructibleTerrain.Clipping
 
             // Execute subtraction and store result in a PolyTree so that we can easily identify holes
             PolyTree clipperOutput = new PolyTree();
-            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNegative);
+            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftPositive);
 
             // Convert Polytree into list of DTPolygons
             List<DTPolygon> output = new List<DTPolygon>();
@@ -230,14 +230,12 @@ namespace DestructibleTerrain.Clipping
 
     static class ExtensionsForClipperSubtractor
     {
-        private const long FixedDecimalConversion = 10000000;
-
         public static IntPoint ToIntPoint(this Vector2 p) {
-            return new IntPoint(p.x * FixedDecimalConversion, p.y * FixedDecimalConversion);
+            return new IntPoint(p.x * DTUtility.FixedPointConversion, p.y * DTUtility.FixedPointConversion);
         }
 
         public static Vector2 ToVector2(this IntPoint p) {
-            return new Vector2(p.X / (float)FixedDecimalConversion, p.Y / (float)FixedDecimalConversion);
+            return new Vector2(p.X / (float)DTUtility.FixedPointConversion, p.Y / (float)DTUtility.FixedPointConversion);
         }
 
         public static List<IntPoint> ToIntPointList(this IEnumerable<Vector2> vectors) {

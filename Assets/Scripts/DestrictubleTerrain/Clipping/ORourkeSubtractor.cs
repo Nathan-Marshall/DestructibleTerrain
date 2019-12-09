@@ -60,16 +60,17 @@ namespace DestructibleTerrain.Clipping
             pIndex = 0;
             qIndex = 0;
 
-            // Set to either polyP or polyQ, and determines which of the active points (P or Q) is in the half plane
-            // of the other polygon's active segment
-            DTPolygon inside = null;
+            // True if Q is in the half plane of PEdge
+            bool qInside = false;
 
             // The first entry intersection point of the first output polgon. If we return to this point, break the loop
-            Vector2? firstIntersection = null;
+            bool firstIntersectionFound = false;
+            int? firstIntersectionPIndex = null;
+            int? firstIntersectionQIndex = null;
 
             // A flag to indicate whether firstIntersection was found in the previous loop iteration.
             // This is to handle a degenerate case, and is specifically mentioned in O'Rourke's paper.
-            bool foundFirstIntersectionPreviousIteration = false;
+            bool firstIntersectionFoundPreviousIteration = false;
 
             // List of disjoint output polygons after subtraction
             List<DTPolygon> outputPolygons = new List<DTPolygon>();
@@ -82,26 +83,29 @@ namespace DestructibleTerrain.Clipping
             for (int i = 0; i <= 2*(polyP.Contour.Count + polyQ.Contour.Count); ++i) {
                 Vector2? intersection = PQIntersection();
                 if (intersection.HasValue) {
-                    if (firstIntersection.HasValue && intersection.Value == firstIntersection.Value
-                            && !foundFirstIntersectionPreviousIteration) {
+                    if (firstIntersectionFound && !firstIntersectionFoundPreviousIteration
+                            && ModP(pIndex) == ModP(firstIntersectionPIndex.Value)
+                            && ModQ(qIndex) == ModQ(firstIntersectionQIndex.Value)) {
                         break;
                     }
                     else {
                         // This flag can be cleared, since we just checked it, and it should be checked only once after being set
-                        foundFirstIntersectionPreviousIteration = false;
+                        firstIntersectionFoundPreviousIteration = false;
 
-                        inside = InHalfPlaneQ(P) ? polyP : polyQ;
-                        if (inside == polyP) {
+                        qInside = InHalfPlaneP(Q);
+                        if (qInside) {
                             // Entry intersection point for output polygon
                             polygonBegin = intersection.Value;
 
                             // Keep track of this point if it is the entry intersection for the 1st output polygon
-                            if (!firstIntersection.HasValue) {
-                                firstIntersection = intersection.Value;
-                                foundFirstIntersectionPreviousIteration = true;
+                            if (!firstIntersectionFound) {
+                                firstIntersectionFound = true;
+                                firstIntersectionFoundPreviousIteration = true;
+                                firstIntersectionPIndex = pIndex;
+                                firstIntersectionQIndex = qIndex;
                             }
                         }
-                        else {
+                        else if (polygonBegin.HasValue) {
                             // Exit intersection point for output polygon: construct output polygon
                             DTPolygon poly = new DTPolygon();
                             poly.Contour.Add(polygonBegin.Value);
@@ -119,19 +123,19 @@ namespace DestructibleTerrain.Clipping
                 }
                 else {
                     // This flag can be cleared if there is no intersection this iteration
-                    foundFirstIntersectionPreviousIteration = false;
+                    firstIntersectionFoundPreviousIteration = false;
                 }
 
                 if (QEdge.Cross(PEdge) >= 0) {
                     if (InHalfPlaneQ(P)) {
                         // Advance Q
-                        if (inside == polyQ && firstIntersection.HasValue) {
+                        if (qInside) {
                             qVertices.Add(Q);
                         }
                         ++qIndex;
                     } else {
                         // Advance P
-                        if (inside == polyP && firstIntersection.HasValue) {
+                        if (qInside) {
                             pVertices.Add(P);
                         }
                         ++pIndex;
@@ -139,14 +143,14 @@ namespace DestructibleTerrain.Clipping
                 } else {
                     if (InHalfPlaneP(Q)) {
                         // Advance P
-                        if (inside == polyP && firstIntersection.HasValue) {
+                        if (qInside) {
                             pVertices.Add(P);
                         }
                         ++pIndex;
                     }
                     else {
                         // Advance Q
-                        if (inside == polyP && firstIntersection.HasValue) {
+                        if (qInside) {
                             qVertices.Add(Q);
                         }
                         ++qIndex;
@@ -156,9 +160,9 @@ namespace DestructibleTerrain.Clipping
 
             // There were no intersections, so either one poly is entirely contained within the other, or there is no overlap at all
             if (outputPolygons.Count == 0) {
-                if (polyQ.Contains(P)) {
+                if (P.Inside(polyQ)) {
                     // P is entirely within Q, so do nothing, the entire polygon has been subtracted!
-                } else if (polyP.Contains(Q)) {
+                } else if (Q.Inside(polyP)) {
                     // Q is entirely within P, so output a copy of P, with Q (reversed) set as a hole
                     outputPolygons.Add(new DTPolygon(
                         new List<Vector2>(polyP.Contour),
@@ -268,6 +272,14 @@ namespace DestructibleTerrain.Clipping
                 return null;
             }
         }
+
+        int ModP(int pi) {
+            return ((pi % polyP.Contour.Count) + polyP.Contour.Count) % polyP.Contour.Count;
+        }
+
+        int ModQ(int qi) {
+            return ((qi % polyQ.Contour.Count) + polyQ.Contour.Count) % polyQ.Contour.Count;
+        }
     }
 
     static class ExtensionsForYangSubtractor
@@ -284,7 +296,7 @@ namespace DestructibleTerrain.Clipping
             return poly.Contour.GetCircular(i);
         }
 
-        public static bool Contains(this DTPolygon poly, Vector2 point) {
+        public static bool Inside(this Vector2 point, DTPolygon poly) {
             for (int i = 0; i < poly.Contour.Count; i++) {
                 if ((poly.V(i) - poly.V(i - 1)).Cross(point - poly.V(i - 1)) < 0) {
                     return false;

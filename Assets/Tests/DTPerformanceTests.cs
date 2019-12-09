@@ -24,7 +24,7 @@ using DO_Tri_Tri_PPEC = DestructibleTerrain.Destructible.DestructibleObjectTrian
 using DO_Poly_CHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingCustomHMCollider_PolyPartitionEarClippingTriangulator;
 using DO_Poly_PPHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolyPartitionHMCollider_PolyPartitionEarClippingTriangulator;
 
-public static class DestructibleTerrainTests
+public static class DTPerfromanceTests
 {
     private static readonly IExplosionExecutor IterEE = IterativeExplosionExecutor.Instance;
     private static readonly IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
@@ -33,9 +33,9 @@ public static class DestructibleTerrainTests
     private static readonly IPolygonSubtractor ClipperSub = ClipperSubtractor.Instance;
 
     public static class ProfilerMarkers {
-        public static readonly string Namespace = "DestructibleTerrainTests";
+        public static readonly string Namespace = "DTPerformanceTests";
 
-        // DestructibleTerrainTests ProfilerMarkers
+        // DTPerformanceTests ProfilerMarkers
         public static readonly string CreationStr = Namespace + ".Creation";
         public static readonly ProfilerMarker Creation = new ProfilerMarker(CreationStr);
 
@@ -49,7 +49,7 @@ public static class DestructibleTerrainTests
         public static readonly ProfilerMarker Physics = new ProfilerMarker(PhysicsStr);
 
         public static readonly SampleGroupDefinition[] SampleGroupDefinitions = {
-            // DestructibleTerrainTests ProfilerMarkers
+            // DTPerformanceTests ProfilerMarkers
             new SampleGroupDefinition(CreationStr),
             new SampleGroupDefinition(ProcessExplosionsStr),
             
@@ -72,11 +72,11 @@ public static class DestructibleTerrainTests
         Mesh mesh = new Mesh() {
             vertices = new Vector3[] {
                 new Vector3(-0.5f, -1),
-                new Vector3(-0.5f, 0),
-                new Vector3(+0.5f, 0),
-                new Vector3(+0.5f, -1)
+                new Vector3( 0.5f, -1),
+                new Vector3( 0.5f,  0),
+                new Vector3(-0.5f,  0)
             },
-            triangles = new int[] { 0, 1, 2, 2, 3, 0 }
+            triangles = new int[] { 0, 2, 1, 2, 0, 3 }
         };
 
         MeshFilter meshFilter = go.AddComponent<MeshFilter>();
@@ -100,7 +100,7 @@ public static class DestructibleTerrainTests
         for (int i = 0; i < numEdges; ++i) {
             float rOuter = UnityEngine.Random.Range(radius - variationAmplitude, radius + variationAmplitude);
             float rInner = UnityEngine.Random.Range(radius - variationAmplitude, radius + variationAmplitude) * 0.5f;
-            Vector2 dirOuter = new Vector2(Mathf.Cos(i * angleStep), -Mathf.Sin(i * angleStep));
+            Vector2 dirOuter = new Vector2(Mathf.Cos(i * angleStep), Mathf.Sin(i * angleStep));
             Vector2 dirInner = new Vector2(dirOuter.x, -dirOuter.y);
 
             // CW exterior

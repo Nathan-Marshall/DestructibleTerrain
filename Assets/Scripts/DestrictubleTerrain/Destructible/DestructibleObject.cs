@@ -42,16 +42,16 @@ namespace DestructibleTerrain.Destructible
                     new DTPolygon(
                         new List<Vector2> {
                             new Vector2(-1, -1),
-                            new Vector2(-1,  1),
+                            new Vector2( 1, -1),
                             new Vector2( 1,  1),
-                            new Vector2( 1, -1)
+                            new Vector2(-1,  1)
                         },
                         new List<List<Vector2>> {
                             new List<Vector2> {
                                 new Vector2(-0.75f, -0.75f),
-                                new Vector2( 0.75f, -0.75f),
+                                new Vector2(-0.75f,  0.75f),
                                 new Vector2( 0.75f,  0.75f),
-                                new Vector2(-0.75f,  0.75f)
+                                new Vector2( 0.75f, -0.75f)
                             }
                         })
                 });

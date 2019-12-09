@@ -234,7 +234,7 @@ namespace DestructibleTerrain.HertelMehlhorn
 
         public static DTConvexPolygonGroup ToPolyGroup(this TPPLPolyList polyList) {
             return new DTConvexPolygonGroup(polyList.Select(tpplPoly => tpplPoly.GetPoints().Select(
-                p => new Vector2(p.x, p.y)).Reverse().ToList()).ToList());
+                p => new Vector2(p.x, p.y)).ToList()).ToList());
         }
     }
 }

@@ -10,6 +10,77 @@ using UnityEngine;
 
 public static class DTUtility
 {
+    public const int FixedPointConversion = 10000000;
+
+    public class ApproximateVector2Comparer : IEqualityComparer<Vector2>
+    {
+        public bool Equals(Vector2 a, Vector2 b) {
+            return a.Approximately(b);
+        }
+
+        public int GetHashCode(Vector2 v) {
+            int x = v.x.ToFixedPoint();
+            int y = v.y.ToFixedPoint();
+
+            return ListHashCode(new int[] { x, y });
+        }
+    }
+
+    public static int ListHashCode<T>(IList<T> list) {
+        // Multiplicative hash modified from opendatastructures.org chapter 5.3
+
+        long p = (1L << 32) - 5;   // prime: 2^32 - 5
+        long z = 0x64b6055aL;  // 32 random bits
+        int z2 = 0x5067d19d;   // random odd 32 bit number
+        long s = 0;
+        long zi = 1;
+        for (int i = 0; i < list.Count; i++) {
+            // reduce to 31 bits
+            long xi = (list[i].GetHashCode() * z2) >> 1;
+            s = (s + zi * xi) % p;
+            zi = (zi * z) % p;
+        }
+        s = (s + zi * (p - 1)) % p;
+        return (int)s;
+    }
+
+    public static int ToFixedPoint(this float n) {
+        return (int)Mathf.Round(n * FixedPointConversion);
+    }
+
+    public static float FromFixedPoint(this int n) {
+        return n / (float)FixedPointConversion;
+    }
+
+    public static bool Approximately(this Vector2 a, Vector2 b) {
+        return a.x.ToFixedPoint() == b.x.ToFixedPoint() && a.y.ToFixedPoint() == b.y.ToFixedPoint();
+    }
+
+    public static int FixedPointHashCode(this Vector2 v) {
+        int x = v.x.ToFixedPoint();
+        int y = v.y.ToFixedPoint();
+
+        return ListHashCode(new int[] { x, y });
+    }
+
+    public static bool ContainSameValues<T> (IEnumerable<T> inA, IEnumerable<T> inB) where T : IEquatable<T> {
+        if (inA.Count() != inB.Count()) {
+            return false;
+        }
+        List<T> a = new List<T>(inA);
+        List<T> b = new List<T>(inB);
+        for (int i = 0; i < a.Count; ++i) {
+            for (int j = 0; j < b.Count; ++j) {
+                if (a[i].Equals(b[j])) {
+                    a.RemoveAt(i--);
+                    b.RemoveAt(j--);
+                    break;
+                }
+            }
+        }
+        return a.Count == 0 && b.Count == 0;
+    }
+
     public static T GetCircular<T>(this IList<T> list, int i) {
         i = ((i % list.Count) + list.Count) % list.Count;
         return list[i];
