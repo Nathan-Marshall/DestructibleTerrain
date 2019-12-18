@@ -20,6 +20,19 @@ namespace DestructibleTerrain.Clipping
             get { return lazyInstance.Value; }
         }
 
+        private struct SegmentSegmentIntersectionResult
+        {
+            public Vector2 position;
+            public float at;
+            public float bt;
+
+            public SegmentSegmentIntersectionResult(Vector2 position, float at, float bt) {
+                this.position = position;
+                this.at = at;
+                this.bt = bt;
+            }
+        }
+
         DTPolygon polyP;
         DTPolygon polyQ;
         int pIndex;
@@ -160,9 +173,9 @@ namespace DestructibleTerrain.Clipping
 
             // There were no intersections, so either one poly is entirely contained within the other, or there is no overlap at all
             if (outputPolygons.Count == 0) {
-                if (P.Inside(polyQ)) {
+                if (polyP.Inside(polyQ)) {
                     // P is entirely within Q, so do nothing, the entire polygon has been subtracted!
-                } else if (Q.Inside(polyP)) {
+                } else if (polyQ.Inside(polyP)) {
                     // Q is entirely within P, so output a copy of P, with Q (reversed) set as a hole
                     outputPolygons.Add(new DTPolygon(
                         new List<Vector2>(polyP.Contour),
@@ -241,10 +254,16 @@ namespace DestructibleTerrain.Clipping
         }
 
         private Vector2? PQIntersection() {
-            return SegmentSegmentIntersection(PPrev, P, QPrev, Q);
+            SegmentSegmentIntersectionResult? result = SegmentSegmentIntersection(PPrev, P, QPrev, Q);
+            // Prevent intersections in degenerate cases where a vertex from one polygon is contained in the edge of another,
+            // but the areas do not intersect.
+            if (result.HasValue && result.Value.at > 0 && result.Value.bt < 1) {
+                return result.Value.position;
+            }
+            return null;
         }
 
-        private Vector2? SegmentSegmentIntersection(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 b1) {
+        private SegmentSegmentIntersectionResult? SegmentSegmentIntersection(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 b1) {
             // Starting from the formula,
             // A0 + at*(A1 - A0) = B0 + bt*(B1 - B0)
 
@@ -266,7 +285,7 @@ namespace DestructibleTerrain.Clipping
             float bt = diffCrossA / aCrossB;
 
             if (0 <= at && at <= 1 && 0 <= bt && bt <= 1) {
-                return a0 + at * (a1 - a0);
+                return new SegmentSegmentIntersectionResult(a0 + at * (a1 - a0), at, bt);
             }
             else {
                 return null;
@@ -296,10 +315,23 @@ namespace DestructibleTerrain.Clipping
             return poly.Contour.GetCircular(i);
         }
 
-        public static bool Inside(this Vector2 point, DTPolygon poly) {
+        public static bool Inside(this DTPolygon polyA, DTPolygon polyB) {
+            foreach (Vector2 a in polyA.Contour) {
+                bool? aInside = a.Inside(polyB);
+                if (aInside.HasValue) {
+                    return aInside.Value;
+                }
+            }
+            return false;
+        }
+
+        public static bool? Inside(this Vector2 point, DTPolygon poly) {
             for (int i = 0; i < poly.Contour.Count; i++) {
-                if ((poly.V(i) - poly.V(i - 1)).Cross(point - poly.V(i - 1)) < 0) {
+                float cross = (poly.V(i) - poly.V(i - 1)).Cross(point - poly.V(i - 1));
+                if (cross < 0) {
                     return false;
+                } else if (cross == 0) {
+                    return null;
                 }
             }
             return true;
