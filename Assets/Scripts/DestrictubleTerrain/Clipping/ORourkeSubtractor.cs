@@ -180,7 +180,7 @@ namespace DestructibleTerrain.Clipping
             // There were no intersections, so either one poly is entirely contained within the other, or there is no overlap at all
             if (outputPolygons.Count == 0) {
                 if (polyP.Inside(polyQ)) {
-                    // P is entirely within Q, so do nothing, the entire polygon has been subtracted!
+                    // P is entirely within Q, so do nothing. The entire polygon has been subtracted
                 } else if (polyQ.Inside(polyP)) {
                     // Q is entirely within P, so output a copy of P, with Q (reversed) set as a hole
                     outputPolygons.Add(new DTPolygon(
@@ -189,8 +189,13 @@ namespace DestructibleTerrain.Clipping
                             polyQ.Contour.AsEnumerable().Reverse().ToList()
                         }));
                 } else {
-                    // There is no overlap at all, so output a copy of P
-                    outputPolygons.Add(new DTPolygon(new List<Vector2>(polyP.Contour)));
+                    if (polyP.Simplify() == polyQ.Simplify()) {
+                        // The polygons are equal, so do nothing. The entire polygon has been subtracted
+                    }
+                    else {
+                        // There is no overlap at all, so output a copy of P
+                        outputPolygons.Add(new DTPolygon(new List<Vector2>(polyP.Contour)));
+                    }
                 }
             }
 

@@ -116,9 +116,15 @@ public static class DTUnitTests
         private static readonly DTPolygon shortRect = P(V(-1, -0.5f), V(1, -0.5f), V(1, 0.5f), V(-1, 0.5f)); // half height
         private static readonly DTPolygon diamond = P(V(0, -1), V(1, 0), V(0, 1), V(-1, 0)); // start with bottom vertex
         private static readonly DTPolygon smallDiamond = P(V(0, -0.5f), V(0.5f, 0), V(0, 0.5f), V(-0.5f, 0)); // half width and height
-
-        private static void VerifySub(IPolygonSubtractor sub, DTPolygon subj, DTPolygon clip, List<DTPolygon> expected) {
-            Assert.True(DTUtility.ContainSameValues(expected, sub.Subtract(subj, clip)));
+        
+        // Return true if the subtraction result is equal to any of the expected outcomes
+        private static void VerifySub(IPolygonSubtractor sub, DTPolygon subj, DTPolygon clip, params List<DTPolygon>[] expectedOutcomes) {
+            foreach (var expectedOutcome in expectedOutcomes) {
+                if (DTUtility.ContainSameValues(expectedOutcome, sub.Subtract(subj, clip))) {
+                    return;
+                }
+            }
+            Assert.True(false);
         }
 
         public static void ConvexBasic(IPolygonSubtractor sub) {
@@ -153,6 +159,9 @@ public static class DTUnitTests
                 P(V(-0.5f,     1), V(-1,  1), V(   -1,  0.5f))
             );
 
+            // Complete removal
+            List<DTPolygon> empty = new List<DTPolygon>();
+
             VerifySub(sub, square, clip0, expected0);
             VerifySub(sub, square, clip1, expected1);
             VerifySub(sub, square, clip2, expected2);
@@ -162,6 +171,9 @@ public static class DTUnitTests
             VerifySub(sub, square, clip6, expected6);
             VerifySub(sub, square, clip7, expected7);
             VerifySub(sub, square, clip8, expected8);
+
+            // Complete removal
+            VerifySub(sub, smallSquare, square, empty);
         }
 
         public static void ConvexDegenerateIntersection(IPolygonSubtractor sub) {
@@ -216,6 +228,12 @@ public static class DTUnitTests
             List<DTPolygon> expected17 = L(P(V(-1, -1), V(1, -1), V(0, 0), V(1, 1), V(-1, 1)));
             List<DTPolygon> expected18 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 0), V(-1, 1)));
             List<DTPolygon> expected19 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(0, 0)));
+
+            // Complete removal
+            List<DTPolygon> empty = new List<DTPolygon>();
+
+            // Complete removal
+            VerifySub(sub, square, square, empty);
 
             VerifySub(sub, square, clip0, expected0);
             VerifySub(sub, square, clip1, expected1);
@@ -326,32 +344,64 @@ public static class DTUnitTests
         }
 
         public static void ConvexCasesProducingHoles(IPolygonSubtractor sub) {
+            // Diamond hole in center
+            DTPolygon clip0 = smallDiamond;
             // Diamond holes touching edge
-            DTPolygon clip0 = Translate(smallDiamond, V(0, -0.5f)); // bottom
-            DTPolygon clip1 = Translate(smallDiamond, V(0.5f, 0)); // right
-            DTPolygon clip2 = Translate(smallDiamond, V(0, 0.5f)); // top
-            DTPolygon clip3 = Translate(smallDiamond, V(-0.5f, 0)); // left
+            DTPolygon clip1 = Translate(smallDiamond, V(0, -0.5f)); // bottom
+            DTPolygon clip2 = Translate(smallDiamond, V(0.5f, 0)); // right
+            DTPolygon clip3 = Translate(smallDiamond, V(0, 0.5f)); // top
+            DTPolygon clip4 = Translate(smallDiamond, V(-0.5f, 0)); // left
             // Exact diamond clip (produces 4 triangles)
-            DTPolygon clip20 = diamond;
+            DTPolygon clip5 = diamond;
 
+            // Diamond hole in center
+            List<DTPolygon> expected0 = L(new DTPolygon(
+                square.Contour,
+                L(smallDiamond.Contour.AsEnumerable().Reverse().ToList())
+            ));
             // Diamond holes touching edge
-            List<DTPolygon> expected0 = L(P(V(-1, -1), V(0, -1), V(-0.5f, -0.5f), V(0, 0), V(0.5f, -0.5f), V(0, -1), V(1, -1), V(1, 1), V(-1, 1)));
-            List<DTPolygon> expected1 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(0.5f, -0.5f), V(0, 0), V(0.5f, 0.5f), V(1, 0), V(1, 1), V(-1, 1)));
-            List<DTPolygon> expected2 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(0.5f, 0.5f), V(0, 0), V(-0.5f, 0.5f), V(0, 1), V(-1, 1)));
-            List<DTPolygon> expected3 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0), V(-0.5f, 0.5f), V(0, 0), V(-0.5f, -0.5f), V(-1, 0)));
+            List<DTPolygon> expected1 = L(P(V(-1, -1), V(0, -1), V(-0.5f, -0.5f), V(0, 0), V(0.5f, -0.5f), V(0, -1), V(1, -1), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected1Hole = L(new DTPolygon(
+                square.Contour,
+                L(clip1.Contour.AsEnumerable().Reverse().ToList())
+            ));
+            List<DTPolygon> expected2 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(0.5f, -0.5f), V(0, 0), V(0.5f, 0.5f), V(1, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected2Hole = L(new DTPolygon(
+                square.Contour,
+                L(clip2.Contour.AsEnumerable().Reverse().ToList())
+            ));
+            List<DTPolygon> expected3 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(0.5f, 0.5f), V(0, 0), V(-0.5f, 0.5f), V(0, 1), V(-1, 1)));
+            List<DTPolygon> expected3Hole = L(new DTPolygon(
+                square.Contour,
+                L(clip3.Contour.AsEnumerable().Reverse().ToList())
+            ));
+            List<DTPolygon> expected4 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0), V(-0.5f, 0.5f), V(0, 0), V(-0.5f, -0.5f), V(-1, 0)));
+            List<DTPolygon> expected4Hole = L(new DTPolygon(
+                square.Contour,
+                L(clip4.Contour.AsEnumerable().Reverse().ToList())
+            ));
             // Exact diamond clip (produces 4 triangles)
-            List<DTPolygon> expected20 = L(
+            List<DTPolygon> expected5 = L(
                 P(V(-1, 0), V(-1, -1), V(0, -1)),
                 P(V(0, -1), V(1, -1), V(1, 0)),
                 P(V(1, 0), V(1, 1), V(0, 1)),
                 P(V(0, 1), V(-1, 1), V(-1, 0))
             );
+            List<DTPolygon> expected5Hole = L(new DTPolygon(
+                square.Contour,
+                L(clip5.Contour.AsEnumerable().Reverse().ToList())
+            ));
+            List<DTPolygon> expected5Single0 = L(P(V(-1, -1), V(0, -1), V(-1, 0), V(0, 1), V(1, 0), V(0, -1), V(1, -1), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected5Single1 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(0, -1), V(-1, 0), V(0, 1), V(1, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected5Single2 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(1, 0), V(0, -1), V(-1, 0), V(0, 1), V(-1, 1)));
+            List<DTPolygon> expected5Single3 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0), V(0, 1), V(1, 0), V(0, -1), V(-1, 0)));
 
             VerifySub(sub, square, clip0, expected0);
-            VerifySub(sub, square, clip1, expected1);
-            VerifySub(sub, square, clip2, expected2);
-            VerifySub(sub, square, clip3, expected3);
-            VerifySub(sub, square, clip20, expected20);
+            VerifySub(sub, square, clip1, expected1, expected1Hole);
+            VerifySub(sub, square, clip2, expected2, expected2Hole);
+            VerifySub(sub, square, clip3, expected3, expected3Hole);
+            VerifySub(sub, square, clip4, expected4, expected4Hole);
+            VerifySub(sub, square, clip5, expected5, expected5Hole, expected5Single0, expected5Single1, expected5Single2, expected5Single3);
         }
 
 
