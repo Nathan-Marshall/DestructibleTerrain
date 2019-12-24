@@ -64,6 +64,8 @@ namespace DestructibleTerrain.Clipping
             }
         }
 
+        // Working output polygon first vertex
+        Vector2? polygonBegin;
 
         private ORourkeSubtractor() {}
 
@@ -73,100 +75,104 @@ namespace DestructibleTerrain.Clipping
             pIndex = 0;
             qIndex = 0;
 
-            // True if Q is in the half plane of PEdge
-            bool qInside = false;
-
             // The first entry intersection point of the first output polgon. If we return to this point, break the loop
             bool firstIntersectionFound = false;
             int? firstIntersectionPIndex = null;
             int? firstIntersectionQIndex = null;
 
-            // A flag to indicate whether firstIntersection was found in the previous loop iteration.
-            // This is to handle a degenerate case, and is specifically mentioned in O'Rourke's paper.
-            bool firstIntersectionFoundPreviousIteration = false;
-
             // List of disjoint output polygons after subtraction
             List<DTPolygon> outputPolygons = new List<DTPolygon>();
 
             // Working output polygon vertices
-            Vector2? polygonBegin = null;
+            polygonBegin = null;
             List<Vector2> pVertices = new List<Vector2>();
             List<Vector2> qVertices = new List<Vector2>();
 
             for (int i = 0; i <= 2*(polyP.Contour.Count + polyQ.Contour.Count); ++i) {
-                Vector2? intersection = PQIntersection();
-                if (intersection.HasValue) {
-                    if (firstIntersectionFound && !firstIntersectionFoundPreviousIteration
-                            && ModP(pIndex) == ModP(firstIntersectionPIndex.Value)
-                            && ModQ(qIndex) == ModQ(firstIntersectionQIndex.Value)) {
-                        break;
-                    }
-                    else {
-                        // This flag can be cleared, since we just checked it, and it should be checked only once after being set
-                        firstIntersectionFoundPreviousIteration = false;
+                if (polygonBegin.HasValue) {
+                    Vector2? exitIntersection = ExitIntersection();
+                    if (exitIntersection.HasValue) {
+                        // Exit intersection point for output polygon: construct output polygon
+                        DTPolygon poly = new DTPolygon();
+                        poly.Contour.Add(polygonBegin.Value);
+                        poly.Contour.AddRange(pVertices);
+                        poly.Contour.Add(exitIntersection.Value);
+                        poly.Contour.AddRange(qVertices.AsEnumerable().Reverse());
 
-                        qInside = InHalfPlaneP(Q);
-                        if (qInside) {
-                            // Entry intersection point for output polygon
-                            polygonBegin = intersection.Value;
-
-                            // Keep track of this point if it is the entry intersection for the 1st output polygon
-                            if (!firstIntersectionFound) {
-                                firstIntersectionFound = true;
-                                firstIntersectionFoundPreviousIteration = true;
-                                firstIntersectionPIndex = pIndex;
-                                firstIntersectionQIndex = qIndex;
-                            }
-                        }
-                        else if (polygonBegin.HasValue) {
-                            // Exit intersection point for output polygon: construct output polygon
-                            DTPolygon poly = new DTPolygon();
-                            poly.Contour.Add(polygonBegin.Value);
-                            poly.Contour.AddRange(pVertices);
-                            poly.Contour.Add(intersection.Value);
-                            poly.Contour.AddRange(qVertices.AsEnumerable().Reverse());
+                        // Simplify polygon
+                        poly = poly.Simplify();
+                        if (poly != null) {
                             outputPolygons.Add(poly);
-
-                            // Clear working polygon vertices
-                            polygonBegin = null;
-                            pVertices.Clear();
-                            qVertices.Clear();
                         }
+
+                        // Clear working polygon vertices
+                        polygonBegin = null;
+                        pVertices.Clear();
+                        qVertices.Clear();
                     }
                 }
                 else {
-                    // This flag can be cleared if there is no intersection this iteration
-                    firstIntersectionFoundPreviousIteration = false;
+                    Vector2? entranceIntersection = EntranceIntersection();
+                    if (entranceIntersection.HasValue) {
+                        // Loop exit condition: revisiting first intersection
+                        if (firstIntersectionFound
+                                && ModP(pIndex) == ModP(firstIntersectionPIndex.Value)
+                                && ModQ(qIndex) == ModQ(firstIntersectionQIndex.Value)) {
+                            break;
+                        }
+
+                        // Entry intersection point for output polygon
+                        polygonBegin = entranceIntersection.Value;
+                        pVertices.Clear();
+                        qVertices.Clear();
+
+                        // Keep track of this point if it is the entry intersection for the 1st output polygon
+                        if (!firstIntersectionFound) {
+                            firstIntersectionFound = true;
+                            firstIntersectionPIndex = pIndex;
+                            firstIntersectionQIndex = qIndex;
+                        }
+                    }
                 }
 
-                if (QEdge.Cross(PEdge) >= 0) {
-                    if (InHalfPlaneQ(P)) {
-                        // Advance Q
-                        if (qInside) {
-                            qVertices.Add(Q);
-                        }
-                        ++qIndex;
+                void advanceP() {
+                    if (polygonBegin.HasValue) {
+                        pVertices.Add(P);
+                    }
+                    ++pIndex;
+                }
+
+                void advanceQ() {
+                    if (polygonBegin.HasValue) {
+                        qVertices.Add(Q);
+                    }
+                    ++qIndex;
+                }
+                
+                float pSide = (P - QPrev).Cross(QEdge);
+                float qSide = (Q - PPrev).Cross(PEdge);
+                float cross = QEdge.Cross(PEdge);
+
+                if (cross <= 0) {
+                    // QEdge heading inward
+
+                    if (qSide < 0) {
+                        // Q inside P's half-plane, heading away from PEdge
+                        advanceP();
                     } else {
-                        // Advance P
-                        if (qInside) {
-                            pVertices.Add(P);
-                        }
-                        ++pIndex;
+                        // Q outside P's half-plane or on P's line, heading toward PEdge
+                        advanceQ();
                     }
-                } else {
-                    if (InHalfPlaneP(Q)) {
-                        // Advance P
-                        if (qInside) {
-                            pVertices.Add(P);
-                        }
-                        ++pIndex;
-                    }
-                    else {
-                        // Advance Q
-                        if (qInside) {
-                            qVertices.Add(Q);
-                        }
-                        ++qIndex;
+                }
+                else {
+                    // QEdge heading outward
+
+                    if (pSide < 0) {
+                        // P inside Q's half-plane, heading away from QEdge
+                        advanceQ();
+                    } else {
+                        // P outside Q's half-plane or on Q's line, heading toward QEdge
+                        advanceP();
                     }
                 }
             }
@@ -218,48 +224,29 @@ namespace DestructibleTerrain.Clipping
             return outputPolyGroupGroups;
         }
 
-        // Note: does not verify if the polygon is convex, but checks that there are at least 3 vertices, no holes, and
-        // that - assuming the polygon is convex - it is in CCW order
-        private bool IsProbablyValid(DTPolygon poly) {
-            if (poly == null) {
-                return false;
+        private Vector2? EntranceIntersection() {
+            if (PEdge.Cross(QEdge) <= 0) {
+                return null;
             }
 
-            if (poly.Contour.Count < 3) {
-                return false;
-            }
-
-            if (poly.Holes.Count > 0) {
-                return false;
-            }
-
-            Vector2 v0 = poly.Contour[1] - poly.Contour[0];
-            Vector2 v1 = poly.Contour[2] - poly.Contour[1];
-
-            // Return false if the first 3 vertices are CW. We will assume the polygon is convex and that the rest of
-            // the vertices follow the same wrapping direction as these 3
-            if (v0.Cross(v1) < 0) {
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool InHalfPlaneP(Vector2 x) {
-            return PEdge.Cross(x - PPrev) >= 0;
-        }
-
-        private bool InHalfPlaneQ(Vector2 x) {
-            return QEdge.Cross(x - QPrev) >= 0;
-        }
-
-        private Vector2? PQIntersection() {
             SegmentSegmentIntersectionResult? result = SegmentSegmentIntersection(PPrev, P, QPrev, Q);
-            // Prevent intersections in degenerate cases where a vertex from one polygon is contained in the edge of another,
-            // but the areas do not intersect.
-            if (result.HasValue && result.Value.at > 0 && result.Value.bt < 1) {
+            if (result.HasValue && result.Value.at < 1 && result.Value.bt < 1) {
                 return result.Value.position;
             }
+
+            return null;
+        }
+
+        private Vector2? ExitIntersection() {
+            if (!polygonBegin.HasValue || PEdge.Cross(QEdge) >= 0) {
+                return null;
+            }
+
+            SegmentSegmentIntersectionResult? result = SegmentSegmentIntersection(PPrev, P, QPrev, Q);
+            if (result.HasValue) {
+                return result.Value.position;
+            }
+
             return null;
         }
 
@@ -303,14 +290,6 @@ namespace DestructibleTerrain.Clipping
 
     static class ExtensionsForYangSubtractor
     {
-        public static float Dot(this Vector2 a, Vector2 b) {
-            return Vector2.Dot(a, b);
-        }
-
-        public static float Cross(this Vector2 a, Vector2 b) {
-            return (a.x * b.y) - (a.y * b.x);
-        }
-
         public static Vector2 V(this DTPolygon poly, int i) {
             return poly.Contour.GetCircular(i);
         }

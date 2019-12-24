@@ -69,52 +69,84 @@ public static class DTUnitTests
             UnityEngine.Object.Destroy(go);
         }
     }
-    
+
+
+    private static Vector2 V(float x, float y) {
+        return new Vector2(x, y);
+    }
+
+    private static DTPolygon P(params Vector2[] contour) {
+        return new DTPolygon(new List<Vector2>(contour));
+    }
+
+    private static DTPolygon Translate(DTPolygon poly, Vector2 t) {
+        return new DTPolygon(
+            poly.Contour.Select(v => { return v + t; }).ToList(),
+            poly.Holes.Select(hole => {
+                return hole.Select(v => { return v + t; }).ToList();
+            }).ToList());
+    }
+
+    private static List<T> L<T>(params T[] elements) {
+        return new List<T>(elements);
+    }
+
+
+    public static class Utility
+    {
+        [Test]
+        public static void SimplifyContour () {
+            var inContour = L(V(0, 0), V(1, 0), V(2, 0), V(3, 0), V(3, 1), V(2, 1), V(2, 2), V(2, 3), V(3, 3), V(2, 3), V(2, 2), V(2, 1), V(1, 1), V(0, 1), V(0, 1), V(0, 0));
+            var expectedContour = L(V(3, 0), V(3, 1), V(0, 1), V(0, 0));
+            var outContour = DTUtility.SimplifyContour(inContour);
+            Assert.AreEqual(outContour.Count, expectedContour.Count);
+            for (int i = 0; i < expectedContour.Count; ++i) {
+                Assert.AreEqual(outContour[i], expectedContour[i]);
+            }
+        }
+    }
 
     public static class Subtractors
     {
-        private static Vector2 V(float x, float y) {
-            return new Vector2(x, y);
-        }
-
-        private static DTPolygon P(params Vector2[] contour) {
-            return new DTPolygon(new List<Vector2>(contour));
-        }
-
-        private static DTPolygon Translate(DTPolygon poly, Vector2 t) {
-            return new DTPolygon(
-                poly.Contour.Select(v => { return v + t; }).ToList(),
-                poly.Holes.Select(hole => {
-                    return hole.Select(v => { return v + t; }).ToList();
-                }).ToList());
-        }
-
-        private static List<DTPolygon> L(params DTPolygon[] polys) {
-            return new List<DTPolygon>(polys);
-        }
+        private static readonly DTPolygon square = P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1)); // start with bottom left vertex
+        private static readonly DTPolygon smallSquare = P(V(-0.5f, -0.5f), V(0.5f, -0.5f), V(0.5f, 0.5f), V(-0.5f, 0.5f)); // half width and height
+        private static readonly DTPolygon wideRect = P(V(-2, -1), V(2, -1), V(2, 1), V(-2, 1)); // double width
+        private static readonly DTPolygon narrowRect = P(V(-0.5f, -1), V(0.5f, -1), V(0.5f, 1), V(-0.5f, 1)); // half width
+        private static readonly DTPolygon tallRect = P(V(-1, -2), V(1, -2), V(1, 2), V(-1, 2)); // double height
+        private static readonly DTPolygon shortRect = P(V(-1, -0.5f), V(1, -0.5f), V(1, 0.5f), V(-1, 0.5f)); // half height
+        private static readonly DTPolygon diamond = P(V(0, -1), V(1, 0), V(0, 1), V(-1, 0)); // start with bottom vertex
+        private static readonly DTPolygon smallDiamond = P(V(0, -0.5f), V(0.5f, 0), V(0, 0.5f), V(-0.5f, 0)); // half width and height
 
         private static void VerifySub(IPolygonSubtractor sub, DTPolygon subj, DTPolygon clip, List<DTPolygon> expected) {
             Assert.True(DTUtility.ContainSameValues(expected, sub.Subtract(subj, clip)));
         }
 
         public static void ConvexBasic(IPolygonSubtractor sub) {
-            DTPolygon square = P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1)); // start with bottom left vertex
-
-            // All four basic corner clips (produces an 'L' shape)
+            // Basic corner clips (produces an 'L' shape)
             DTPolygon clip0 = Translate(square, V(-1, -1)); // bottom left
             DTPolygon clip1 = Translate(square, V( 1, -1)); // bottom right
             DTPolygon clip2 = Translate(square, V( 1,  1)); // top right
             DTPolygon clip3 = Translate(square, V(-1,  1)); // top left
+            // Basic edge clips (produces a 'C' shape)
+            DTPolygon clip4 = Translate(narrowRect, V(0, -1)); // bottom
+            DTPolygon clip5 = Translate(shortRect, V(1, 0)); // right
+            DTPolygon clip6 = Translate(narrowRect, V(0, 1)); // top
+            DTPolygon clip7 = Translate(shortRect, V(-1, 0)); // left
             // Diamond clip (produces 4 triangles)
-            DTPolygon clip4 = P(V(0, -1.5f), V(1.5f, 0), V(0, 1.5f), V(-1.5f, 0)); // start with bottom vertex
+            DTPolygon clip8 = P(V(0, -1.5f), V(1.5f, 0), V(0, 1.5f), V(-1.5f, 0)); // start with bottom vertex
 
-            // All four basic corner clips (produces an 'L' shape)
+            // Basic corner clips (produces an 'L' shape)
             List<DTPolygon> expected0 = L(P(V( 0,  0), V(0, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0)));
             List<DTPolygon> expected1 = L(P(V(-1, -1), V(0, -1), V(0,  0), V(1, 0), V( 1, 1), V(-1, 1)));
             List<DTPolygon> expected2 = L(P(V(-1, -1), V(1, -1), V(1,  0), V(0, 0), V( 0, 1), V(-1, 1)));
             List<DTPolygon> expected3 = L(P(V(-1, -1), V(1, -1), V(1,  1), V(0, 1), V( 0, 0), V(-1, 0)));
+            // Basic edge clips (produces a 'C' shape)
+            List<DTPolygon> expected4 = L(P(V(-1, -1), V(-0.5f, -1), V(-0.5f, 0), V(0.5f, 0), V(0.5f, -1), V(1, -1), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected5 = L(P(V(-1, -1), V(1, -1), V(1, -0.5f), V(0, -0.5f), V(0, 0.5f), V(1, 0.5f), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected6 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0.5f, 1), V(0.5f, 0), V(-0.5f, 0), V(-0.5f, 1), V(-1, 1)));
+            List<DTPolygon> expected7 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0.5f), V(0, 0.5f), V(0, -0.5f), V(-1, -0.5f)));
             // Diamond clip (produces 4 triangles)
-            List<DTPolygon> expected4 = L(
+            List<DTPolygon> expected8 = L(
                 P(V(   -1, -0.5f), V(-1, -1), V(-0.5f,    -1)),
                 P(V( 0.5f,    -1), V( 1, -1), V(    1, -0.5f)),
                 P(V(    1,  0.5f), V( 1,  1), V( 0.5f,     1)),
@@ -126,16 +158,88 @@ public static class DTUnitTests
             VerifySub(sub, square, clip2, expected2);
             VerifySub(sub, square, clip3, expected3);
             VerifySub(sub, square, clip4, expected4);
+            VerifySub(sub, square, clip5, expected5);
+            VerifySub(sub, square, clip6, expected6);
+            VerifySub(sub, square, clip7, expected7);
+            VerifySub(sub, square, clip8, expected8);
+        }
+
+        public static void ConvexDegenerateIntersection(IPolygonSubtractor sub) {
+            // Shared corners (produces an 'L' shape)
+            DTPolygon clip0 = Translate(smallSquare, V(-0.5f, -0.5f)); // bottom left
+            DTPolygon clip1 = Translate(smallSquare, V(0.5f, -0.5f)); // bottom right
+            DTPolygon clip2 = Translate(smallSquare, V(0.5f, 0.5f)); // top right
+            DTPolygon clip3 = Translate(smallSquare, V(-0.5f, 0.5f)); // top left
+            // Q edge inside P edge (produces a 'C' shape)
+            DTPolygon clip4 = Translate(smallSquare, V(0, -0.5f)); // bottom
+            DTPolygon clip5 = Translate(smallSquare, V(0.5f, 0)); // right
+            DTPolygon clip6 = Translate(smallSquare, V(0, 0.5f)); // top
+            DTPolygon clip7 = Translate(smallSquare, V(-0.5f, 0)); // left
+            // Half same
+            DTPolygon clip8 = Translate(shortRect, V(0, -0.5f)); // bottom half
+            DTPolygon clip9 = Translate(narrowRect, V(0.5f, 0)); // right half
+            DTPolygon clip10 = Translate(shortRect, V(0, 0.5f)); // top half
+            DTPolygon clip11 = Translate(narrowRect, V(-0.5f, 0)); // left half
+            // Diamond on corners
+            DTPolygon clip12 = Translate(diamond, V(-1, -1)); // bottom left
+            DTPolygon clip13 = Translate(diamond, V(1, -1)); // bottom right
+            DTPolygon clip14 = Translate(diamond, V(1, 1)); // top right
+            DTPolygon clip15 = Translate(diamond, V(-1, 1)); // top left
+            // Diamond on edges
+            DTPolygon clip16 = Translate(diamond, V(0, -1)); // bottom
+            DTPolygon clip17 = Translate(diamond, V(1, 0)); // right
+            DTPolygon clip18 = Translate(diamond, V(0, 1)); // top
+            DTPolygon clip19 = Translate(diamond, V(-1, 0)); // left
+
+            // Basic corner clips (produces an 'L' shape)
+            List<DTPolygon> expected0 = L(P(V(0, 0), V(0, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0)));
+            List<DTPolygon> expected1 = L(P(V(-1, -1), V(0, -1), V(0, 0), V(1, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected2 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(0, 0), V(0, 1), V(-1, 1)));
+            List<DTPolygon> expected3 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(0, 0), V(-1, 0)));
+            // Basic edge clips (produces a 'C' shape)
+            List<DTPolygon> expected4 = L(P(V(-1, -1), V(-0.5f, -1), V(-0.5f, 0), V(0.5f, 0), V(0.5f, -1), V(1, -1), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected5 = L(P(V(-1, -1), V(1, -1), V(1, -0.5f), V(0, -0.5f), V(0, 0.5f), V(1, 0.5f), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected6 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0.5f, 1), V(0.5f, 0), V(-0.5f, 0), V(-0.5f, 1), V(-1, 1)));
+            List<DTPolygon> expected7 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0.5f), V(0, 0.5f), V(0, -0.5f), V(-1, -0.5f)));
+            // Half same
+            List<DTPolygon> expected8 = L(P(V(-1, 0), V(1, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected9 = L(P(V(-1, -1), V(0, -1), V(0, 1), V(-1, 1)));
+            List<DTPolygon> expected10 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(-1, 0)));
+            List<DTPolygon> expected11 = L(P(V(0, -1), V(1, -1), V(1, 1), V(0, 1)));
+            // Diamond on corners
+            List<DTPolygon> expected12 = L(P(V(0, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0)));
+            List<DTPolygon> expected13 = L(P(V(-1, -1), V(0, -1), V(1, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected14 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(0, 1), V(-1, 1)));
+            List<DTPolygon> expected15 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(-1, 0)));
+            // Diamond on edges
+            List<DTPolygon> expected16 = L(P(V(-1, -1), V(0, 0), V(1, -1), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected17 = L(P(V(-1, -1), V(1, -1), V(0, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected18 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 0), V(-1, 1)));
+            List<DTPolygon> expected19 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(0, 0)));
+
+            VerifySub(sub, square, clip0, expected0);
+            VerifySub(sub, square, clip1, expected1);
+            VerifySub(sub, square, clip2, expected2);
+            VerifySub(sub, square, clip3, expected3);
+            VerifySub(sub, square, clip4, expected4);
+            VerifySub(sub, square, clip5, expected5);
+            VerifySub(sub, square, clip6, expected6);
+            VerifySub(sub, square, clip7, expected7);
+            VerifySub(sub, square, clip8, expected8);
+            VerifySub(sub, square, clip9, expected9);
+            VerifySub(sub, square, clip10, expected10);
+            VerifySub(sub, square, clip11, expected11);
+            VerifySub(sub, square, clip12, expected12);
+            VerifySub(sub, square, clip13, expected13);
+            VerifySub(sub, square, clip14, expected14);
+            VerifySub(sub, square, clip15, expected15);
+            VerifySub(sub, square, clip16, expected16);
+            VerifySub(sub, square, clip17, expected17);
+            VerifySub(sub, square, clip18, expected18);
+            VerifySub(sub, square, clip19, expected19);
         }
 
         public static void ConvexDegenerateNoIntersection(IPolygonSubtractor sub) {
-            DTPolygon square = P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1)); // start with bottom left vertex
-            DTPolygon wideRect = P(V(-2, -1), V(2, -1), V(2, 1), V(-2, 1)); // double width
-            DTPolygon narrowRect = P(V(-0.5f, -1), V(0.5f, -1), V(0.5f, 1), V(-0.5f, 1)); // half width
-            DTPolygon tallRect = P(V(-1, -2), V(1, -2), V(1, 2), V(-1, 2)); // double height
-            DTPolygon shortRect = P(V(-1, -0.5f), V(1, -0.5f), V(1, 0.5f), V(-1, 0.5f)); // half height
-            DTPolygon diamond = P(V(0, -1), V(1, 0), V(0, 1), V(-1, 0)); // start with bottom vertex
-
             // Half-overlapping edges
             DTPolygon clip0 = Translate(square, V(-1, -2)); // bottom edge shared, Q shifted left
             DTPolygon clip1 = Translate(square, V( 1, -2)); // bottom edge shared, Q shifted right
@@ -166,20 +270,20 @@ public static class DTUnitTests
             DTPolygon clip22 = Translate(square, V( 2,  2)); // square, top left vertex same
             DTPolygon clip23 = Translate(square, V(-2,  2)); // square, top right vertex same
             // Single shared vertex (diamond)
-            DTPolygon clip24 = Translate(diamond, V(-1, -2)); // diamond, bottom left vertex same
-            DTPolygon clip25 = Translate(diamond, V( 1, -2)); // diamond, bottom right vertex same
-            DTPolygon clip26 = Translate(diamond, V(-1,  2)); // diamond, top left vertex same
-            DTPolygon clip27 = Translate(diamond, V( 1,  2)); // diamond, top right vertex same
+            DTPolygon clip24 = Translate(diamond, V(-1, -2)); // diamond top, square bottom left vertex same
+            DTPolygon clip25 = Translate(diamond, V( 1, -2)); // diamond top, square bottom right vertex same
+            DTPolygon clip26 = Translate(diamond, V(-1,  2)); // diamond bottom, square top left vertex same
+            DTPolygon clip27 = Translate(diamond, V( 1,  2)); // diamond bottom, square top right vertex same
             // Q single vertex inside P edge
             DTPolygon clip28 = Translate(diamond, V( 0, -2)); // bottom edge contains Q vertex
             DTPolygon clip29 = Translate(diamond, V( 2,  0)); // right edge contains Q vertex
             DTPolygon clip30 = Translate(diamond, V( 0,  2)); // top edge contains Q vertex
             DTPolygon clip31 = Translate(diamond, V(-2,  0)); // left edge contains Q vertex
             // P single vertex inside Q edge
-            DTPolygon clip32 = Translate(diamond, V(-1.5f, -1.5f)); // bottom edge contains Q vertex
-            DTPolygon clip33 = Translate(diamond, V( 1.5f, -1.5f)); // right edge contains Q vertex
-            DTPolygon clip34 = Translate(diamond, V( 1.5f,  1.5f)); // top edge contains Q vertex
-            DTPolygon clip35 = Translate(diamond, V(-1.5f,  1.5f)); // left edge contains Q vertex
+            DTPolygon clip32 = Translate(diamond, V(-1.5f, -1.5f)); // bottom left vertex in Q edge
+            DTPolygon clip33 = Translate(diamond, V( 1.5f, -1.5f)); // bottom right vertex in Q edge
+            DTPolygon clip34 = Translate(diamond, V( 1.5f,  1.5f)); // top right vertex in Q edge
+            DTPolygon clip35 = Translate(diamond, V(-1.5f,  1.5f)); // top left vertex in Q edge
 
             List<DTPolygon> expectedNoChange = L(square);
             
@@ -221,6 +325,37 @@ public static class DTUnitTests
             VerifySub(sub, square, clip35, expectedNoChange);
         }
 
+        public static void ConvexCasesProducingHoles(IPolygonSubtractor sub) {
+            // Diamond holes touching edge
+            DTPolygon clip0 = Translate(smallDiamond, V(0, -0.5f)); // bottom
+            DTPolygon clip1 = Translate(smallDiamond, V(0.5f, 0)); // right
+            DTPolygon clip2 = Translate(smallDiamond, V(0, 0.5f)); // top
+            DTPolygon clip3 = Translate(smallDiamond, V(-0.5f, 0)); // left
+            // Exact diamond clip (produces 4 triangles)
+            DTPolygon clip20 = diamond;
+
+            // Diamond holes touching edge
+            List<DTPolygon> expected0 = L(P(V(-1, -1), V(0, -1), V(-0.5f, -0.5f), V(0, 0), V(0.5f, -0.5f), V(0, -1), V(1, -1), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected1 = L(P(V(-1, -1), V(1, -1), V(1, 0), V(0.5f, -0.5f), V(0, 0), V(0.5f, 0.5f), V(1, 0), V(1, 1), V(-1, 1)));
+            List<DTPolygon> expected2 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(0.5f, 0.5f), V(0, 0), V(-0.5f, 0.5f), V(0, 1), V(-1, 1)));
+            List<DTPolygon> expected3 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0), V(-0.5f, 0.5f), V(0, 0), V(-0.5f, -0.5f), V(-1, 0)));
+            // Exact diamond clip (produces 4 triangles)
+            List<DTPolygon> expected20 = L(
+                P(V(-1, 0), V(-1, -1), V(0, -1)),
+                P(V(0, -1), V(1, -1), V(1, 0)),
+                P(V(1, 0), V(1, 1), V(0, 1)),
+                P(V(0, 1), V(-1, 1), V(-1, 0))
+            );
+
+            VerifySub(sub, square, clip0, expected0);
+            VerifySub(sub, square, clip1, expected1);
+            VerifySub(sub, square, clip2, expected2);
+            VerifySub(sub, square, clip3, expected3);
+            VerifySub(sub, square, clip20, expected20);
+        }
+
+
+
         public static class Clipper
         {
             public static IPolygonSubtractor sub = ClipperSub;
@@ -231,8 +366,18 @@ public static class DTUnitTests
             }
 
             [Test]
+            public static void ConvexDegenerateIntersection() {
+                Subtractors.ConvexDegenerateIntersection(sub);
+            }
+
+            [Test]
             public static void ConvexDegenerateNoIntersection() {
                 Subtractors.ConvexDegenerateNoIntersection(sub);
+            }
+
+            [Test]
+            public static void ConvexCasesProducingHoles() {
+                Subtractors.ConvexCasesProducingHoles(sub);
             }
         }
 
@@ -246,8 +391,18 @@ public static class DTUnitTests
             }
 
             [Test]
+            public static void ConvexDegenerateIntersection() {
+                Subtractors.ConvexDegenerateIntersection(sub);
+            }
+
+            [Test]
             public static void ConvexDegenerateNoIntersection() {
                 Subtractors.ConvexDegenerateNoIntersection(sub);
+            }
+
+            [Test]
+            public static void ConvexCasesProducingHoles() {
+                Subtractors.ConvexCasesProducingHoles(sub);
             }
         }
     }

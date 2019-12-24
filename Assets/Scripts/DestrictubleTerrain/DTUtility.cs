@@ -86,6 +86,48 @@ public static class DTUtility
         return list[i];
     }
 
+    // Removes unnecessary vertices
+    public static List<Vector2> SimplifyContour(List<Vector2> inContour) {
+        List<Vector2> contour = inContour.ToList();
+
+        for (int i = 0; i < contour.Count; ++i) {
+            Vector2 fromPrev = contour.GetCircular(i) - contour.GetCircular(i - 1);
+            Vector2 toNext = contour.GetCircular(i + 1) - contour.GetCircular(i);
+            if (fromPrev.Cross(toNext) == 0) {
+                contour.RemoveAt((i % contour.Count + contour.Count) % contour.Count);
+                i -= 2;
+            }
+        }
+
+        return contour;
+    }
+
+    // Removes unnecessary vertices
+    public static DTPolygon Simplify(this DTPolygon inPoly) {
+        var simplifiedContour = SimplifyContour(inPoly.Contour);
+        if (simplifiedContour.Count == 0) {
+            return null;
+        }
+
+        List<List<Vector2>> simplifiedHoles = new List<List<Vector2>>();
+        foreach (var hole in inPoly.Holes) {
+            var simplifiedHole = SimplifyContour(hole);
+            if (simplifiedContour.Count != 0) {
+                simplifiedHoles.Add(simplifiedHole);
+            }
+        }
+
+        return new DTPolygon(simplifiedContour, simplifiedHoles);
+    }
+
+    public static float Dot(this Vector2 a, Vector2 b) {
+        return Vector2.Dot(a, b);
+    }
+
+    public static float Cross(this Vector2 a, Vector2 b) {
+        return (a.x * b.y) - (a.y * b.x);
+    }
+
     // -1 means the object bounds are completely outside the explosion.
     // 0 means the bounds intersect.
     // 1 means the object bounds are completely inside the explosion.
