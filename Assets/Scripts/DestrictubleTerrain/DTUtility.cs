@@ -158,6 +158,45 @@ public static class DTUtility
         // Bounds intersect
         return 0;
     }
+    
+    // Returns true if bounds overlap
+    public static bool BoundsCheck(DTPolygon a, DTPolygon b) {
+        Vector2 aMin = a.Contour[0];
+        Vector2 aMax = a.Contour[0];
+        foreach (Vector2 v in a.Contour) {
+            if (v.x < aMin.x) {
+                aMin.x = v.x;
+            }
+            if (v.y < aMin.y) {
+                aMin.y = v.y;
+            }
+            if (v.x > aMax.x) {
+                aMax.x = v.x;
+            }
+            if (v.y > aMax.y) {
+                aMax.y = v.y;
+            }
+        }
+
+        Vector2 bMin = b.Contour[0];
+        Vector2 bMax = b.Contour[0];
+        foreach (Vector2 v in b.Contour) {
+            if (v.x < bMin.x) {
+                bMin.x = v.x;
+            }
+            if (v.y < bMin.y) {
+                bMin.y = v.y;
+            }
+            if (v.x > bMax.x) {
+                bMax.x = v.x;
+            }
+            if (v.y > bMax.y) {
+                bMax.y = v.y;
+            }
+        }
+
+        return bMax.x > aMin.x && bMax.y > aMin.y && aMax.x > bMin.x && aMax.y > bMin.y;
+    }
 
     public static Bounds GetBounds(IEnumerable<Vector2> points) {
         Vector2 min = points.First();

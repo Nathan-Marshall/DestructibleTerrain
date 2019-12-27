@@ -70,8 +70,16 @@ namespace DestructibleTerrain.Clipping
         private ORourkeSubtractor() {}
 
         public List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
+            if (!DTUtility.BoundsCheck(subject, clippingPolygon)) {
+                // There is no overlap at all, so output a copy of the subject polygon
+                return new List<DTPolygon>() {
+                    new DTPolygon(new List<Vector2>(subject.Contour))
+                };
+            }
+
             polyP = subject;
             polyQ = clippingPolygon;
+
             pIndex = 0;
             qIndex = 0;
 

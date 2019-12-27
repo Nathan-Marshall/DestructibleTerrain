@@ -25,6 +25,13 @@ namespace DestructibleTerrain.Clipping
         }
 
         public List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
+            if (!DTUtility.BoundsCheck(subject, clippingPolygon)) {
+                // There is no overlap at all, so output a copy of the subject polygon
+                return new List<DTPolygon>() {
+                    new DTPolygon(new List<Vector2>(subject.Contour))
+                };
+            }
+
             clipper.Clear();
 
             // Add subject polygon paths
@@ -55,6 +62,9 @@ namespace DestructibleTerrain.Clipping
         }
         
         public List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons) {
+            // No bounds check. We could do a bounds check to return now if the polygroups are entirely
+            // disjoint, but we do that in the explosion executor anyway
+
             clipper.Clear();
 
             // Add subject polygon paths
@@ -117,6 +127,9 @@ namespace DestructibleTerrain.Clipping
         // WARNING: This implementation is currently very volatile and can cause multiple input polygon groups to fuse
         // together if a vertex from one is very close to the vertex of another.
         public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
+            // No bounds check. We could do a bounds check to return early if polygroups were entirely
+            // disjoint, but we do that in the explosion executor anyway
+
             clipper.Clear();
 
             // Map the points of each polygon to the index of the polygon group to which the polygon belongs

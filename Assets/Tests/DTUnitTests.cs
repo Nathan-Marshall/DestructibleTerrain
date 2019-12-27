@@ -108,6 +108,8 @@ public static class DTUnitTests
 
     public static class Subtractors
     {
+        private static readonly float sqrt2 = Mathf.Sqrt(2);
+
         private static readonly DTPolygon square = P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1)); // start with bottom left vertex
         private static readonly DTPolygon smallSquare = P(V(-0.5f, -0.5f), V(0.5f, -0.5f), V(0.5f, 0.5f), V(-0.5f, 0.5f)); // half width and height
         private static readonly DTPolygon wideRect = P(V(-2, -1), V(2, -1), V(2, 1), V(-2, 1)); // double width
@@ -116,6 +118,7 @@ public static class DTUnitTests
         private static readonly DTPolygon shortRect = P(V(-1, -0.5f), V(1, -0.5f), V(1, 0.5f), V(-1, 0.5f)); // half height
         private static readonly DTPolygon diamond = P(V(0, -1), V(1, 0), V(0, 1), V(-1, 0)); // start with bottom vertex
         private static readonly DTPolygon smallDiamond = P(V(0, -0.5f), V(0.5f, 0), V(0, 0.5f), V(-0.5f, 0)); // half width and height
+        private static readonly DTPolygon octagon = P(V(-1, -1), V(0, -sqrt2), V(1, -1), V(sqrt2, 0), V(1, 1), V(0, sqrt2), V(-1, 1), V(-sqrt2, 0));
         
         // Return true if the subtraction result is equal to any of the expected outcomes
         private static void VerifySub(IPolygonSubtractor sub, DTPolygon subj, DTPolygon clip, params List<DTPolygon>[] expectedOutcomes) {
@@ -259,88 +262,91 @@ public static class DTUnitTests
 
         public static void ConvexDegenerateNoIntersection(IPolygonSubtractor sub) {
             // Half-overlapping edges
-            DTPolygon clip0 = Translate(square, V(-1, -2)); // bottom edge shared, Q shifted left
-            DTPolygon clip1 = Translate(square, V( 1, -2)); // bottom edge shared, Q shifted right
-            DTPolygon clip2 = Translate(square, V( 2, -1)); // right edge shared, Q shifted down
-            DTPolygon clip3 = Translate(square, V( 2,  1)); // right edge shared, Q shifted up
-            DTPolygon clip4 = Translate(square, V( 1,  2)); // top edge shared, Q shifted right
-            DTPolygon clip5 = Translate(square, V(-1,  2)); // top edge shared, Q shifted left
-            DTPolygon clip6 = Translate(square, V(-2,  1)); // left edge shared, Q shifted up
-            DTPolygon clip7 = Translate(square, V(-2, -1)); // left edge shared, Q shifted down
+            DTPolygon clip0 = Translate(diamond, V(0.5f, -1.5f)); // bottom right edge shared, Q shifted down-left
+            DTPolygon clip1 = Translate(diamond, V(1.5f, -0.5f)); // bottom right edge shared, Q shifted up-right
+            DTPolygon clip2 = Translate(diamond, V(1.5f, 0.5f)); // top right edge shared, Q shifted down-right
+            DTPolygon clip3 = Translate(diamond, V(0.5f, 1.5f)); // top right edge shared, Q shifted up-left
+            DTPolygon clip4 = Translate(diamond, V(-0.5f, 1.5f)); // top left edge shared, Q shifted up-right
+            DTPolygon clip5 = Translate(diamond, V(-1.5f, 0.5f)); // top left edge shared, Q shifted down-left
+            DTPolygon clip6 = Translate(diamond, V(-1.5f, -0.5f)); // bottom left edge shared, Q shifted up-left
+            DTPolygon clip7 = Translate(diamond, V(-0.5f, -1.5f)); // bottom left edge shared, Q shifted down-right
             // P edge completely inside Q edge
-            DTPolygon clip8  = Translate(wideRect, V( 0, -2)); // bottom edge inside Q edge
-            DTPolygon clip9  = Translate(tallRect, V( 2,  0)); // right edge inside Q edge
-            DTPolygon clip10 = Translate(wideRect, V( 0,  2)); // top edge inside Q edge
-            DTPolygon clip11 = Translate(tallRect, V(-2,  0)); // left edge inside Q edge
+            DTPolygon clip8  = Translate(diamond, V(0.75f, -0.75f)); // bottom right edge inside Q edge
+            DTPolygon clip9  = Translate(diamond, V(0.75f, 0.75f)); // top right edge inside Q edge
+            DTPolygon clip10 = Translate(diamond, V(-0.75f, 0.75f)); // top left edge inside Q edge
+            DTPolygon clip11 = Translate(diamond, V(-0.75f, -0.75f)); // bottom left edge inside Q edge
             // P edge completely contains Q edge
-            DTPolygon clip12 = Translate(narrowRect, V( 0, -2)); // bottom edge contains Q edge
-            DTPolygon clip13 = Translate(shortRect,  V( 2,  0)); // right edge contains Q edge
-            DTPolygon clip14 = Translate(narrowRect, V( 0,  2)); // top edge contains Q edge
-            DTPolygon clip15 = Translate(shortRect,  V(-2,  0)); // left edge contains Q edge
+            DTPolygon clip12 = Translate(smallDiamond, V(0.75f, -0.75f)); // bottom right edge contains Q edge
+            DTPolygon clip13 = Translate(smallDiamond, V(0.75f, 0.75f)); // top right edge contains Q edge
+            DTPolygon clip14 = Translate(smallDiamond, V(-0.75f, 0.75f)); // top left edge contains Q edge
+            DTPolygon clip15 = Translate(smallDiamond, V(-0.75f, -0.75f)); // bottom left edge contains Q edge
             // P edge and Q edge are the same
-            DTPolygon clip16 = Translate(square, V( 0, -2)); // bottom edge same
-            DTPolygon clip17 = Translate(square, V( 2,  0)); // right edge same
-            DTPolygon clip18 = Translate(square, V( 0,  2)); // top edge same
-            DTPolygon clip19 = Translate(square, V(-2,  0)); // left edge same
-            // Single shared vertex (square)
-            DTPolygon clip20 = Translate(square, V(-2, -2)); // square, bottom left vertex same
-            DTPolygon clip21 = Translate(square, V( 2, -2)); // square, bottom right vertex same
-            DTPolygon clip22 = Translate(square, V( 2,  2)); // square, top left vertex same
-            DTPolygon clip23 = Translate(square, V(-2,  2)); // square, top right vertex same
+            DTPolygon clip16 = Translate(diamond, V(1, -1)); // bottom right edge same
+            DTPolygon clip17 = Translate(diamond, V(1, 1)); // top right edge same
+            DTPolygon clip18 = Translate(diamond, V(-1, 1)); // top left edge same
+            DTPolygon clip19 = Translate(diamond, V(-1, -1)); // bottom left edge same
+            // Single shared vertex (octagon)
+            DTPolygon clip20 = Translate(octagon, V(-2, -2)); // octagon, bottom left vertex same
+            DTPolygon clip21 = Translate(octagon, V( 2, -2)); // octagon, bottom right vertex same
+            DTPolygon clip22 = Translate(octagon, V( 2,  2)); // octagon, top left vertex same
+            DTPolygon clip23 = Translate(octagon, V(-2,  2)); // octagon, top right vertex same
             // Single shared vertex (diamond)
             DTPolygon clip24 = Translate(diamond, V(-1, -2)); // diamond top, square bottom left vertex same
             DTPolygon clip25 = Translate(diamond, V( 1, -2)); // diamond top, square bottom right vertex same
             DTPolygon clip26 = Translate(diamond, V(-1,  2)); // diamond bottom, square top left vertex same
             DTPolygon clip27 = Translate(diamond, V( 1,  2)); // diamond bottom, square top right vertex same
             // Q single vertex inside P edge
-            DTPolygon clip28 = Translate(diamond, V( 0, -2)); // bottom edge contains Q vertex
-            DTPolygon clip29 = Translate(diamond, V( 2,  0)); // right edge contains Q vertex
-            DTPolygon clip30 = Translate(diamond, V( 0,  2)); // top edge contains Q vertex
-            DTPolygon clip31 = Translate(diamond, V(-2,  0)); // left edge contains Q vertex
+            DTPolygon clip28 = Translate(square, V( 1.5f, -1.5f)); // bottom right edge contains Q vertex
+            DTPolygon clip29 = Translate(square, V( 1.5f,  1.5f)); // top right edge contains Q vertex
+            DTPolygon clip30 = Translate(square, V(-1.5f,  1.5f)); // top left edge contains Q vertex
+            DTPolygon clip31 = Translate(square, V(-1.5f, -1.5f)); // bottom left edge contains Q vertex
             // P single vertex inside Q edge
             DTPolygon clip32 = Translate(diamond, V(-1.5f, -1.5f)); // bottom left vertex in Q edge
             DTPolygon clip33 = Translate(diamond, V( 1.5f, -1.5f)); // bottom right vertex in Q edge
             DTPolygon clip34 = Translate(diamond, V( 1.5f,  1.5f)); // top right vertex in Q edge
             DTPolygon clip35 = Translate(diamond, V(-1.5f,  1.5f)); // top left vertex in Q edge
 
-            List<DTPolygon> expectedNoChange = L(square);
-            
-            VerifySub(sub, square, clip0, expectedNoChange);
-            VerifySub(sub, square, clip1, expectedNoChange);
-            VerifySub(sub, square, clip2, expectedNoChange);
-            VerifySub(sub, square, clip3, expectedNoChange);
-            VerifySub(sub, square, clip4, expectedNoChange);
-            VerifySub(sub, square, clip5, expectedNoChange);
-            VerifySub(sub, square, clip6, expectedNoChange);
-            VerifySub(sub, square, clip7, expectedNoChange);
-            VerifySub(sub, square, clip8, expectedNoChange);
-            VerifySub(sub, square, clip9, expectedNoChange);
-            VerifySub(sub, square, clip10, expectedNoChange);
-            VerifySub(sub, square, clip11, expectedNoChange);
-            VerifySub(sub, square, clip12, expectedNoChange);
-            VerifySub(sub, square, clip13, expectedNoChange);
-            VerifySub(sub, square, clip14, expectedNoChange);
-            VerifySub(sub, square, clip15, expectedNoChange);
-            VerifySub(sub, square, clip16, expectedNoChange);
-            VerifySub(sub, square, clip17, expectedNoChange);
-            VerifySub(sub, square, clip18, expectedNoChange);
-            VerifySub(sub, square, clip19, expectedNoChange);
-            VerifySub(sub, square, clip20, expectedNoChange);
-            VerifySub(sub, square, clip21, expectedNoChange);
-            VerifySub(sub, square, clip22, expectedNoChange);
-            VerifySub(sub, square, clip23, expectedNoChange);
-            VerifySub(sub, square, clip24, expectedNoChange);
-            VerifySub(sub, square, clip25, expectedNoChange);
-            VerifySub(sub, square, clip26, expectedNoChange);
-            VerifySub(sub, square, clip27, expectedNoChange);
-            VerifySub(sub, square, clip28, expectedNoChange);
-            VerifySub(sub, square, clip29, expectedNoChange);
-            VerifySub(sub, square, clip30, expectedNoChange);
-            VerifySub(sub, square, clip31, expectedNoChange);
-            VerifySub(sub, square, clip32, expectedNoChange);
-            VerifySub(sub, square, clip33, expectedNoChange);
-            VerifySub(sub, square, clip34, expectedNoChange);
-            VerifySub(sub, square, clip35, expectedNoChange);
+            List<DTPolygon> expectedSquare = L(square);
+            List<DTPolygon> expectedDiamond = L(diamond);
+            List<DTPolygon> expectedSmallDiamond = L(smallDiamond);
+            List<DTPolygon> expectedOctagon = L(octagon);
+
+            VerifySub(sub, diamond, clip0, expectedDiamond);
+            VerifySub(sub, diamond, clip1, expectedDiamond);
+            VerifySub(sub, diamond, clip2, expectedDiamond);
+            VerifySub(sub, diamond, clip3, expectedDiamond);
+            VerifySub(sub, diamond, clip4, expectedDiamond);
+            VerifySub(sub, diamond, clip5, expectedDiamond);
+            VerifySub(sub, diamond, clip6, expectedDiamond);
+            VerifySub(sub, diamond, clip7, expectedDiamond);
+            VerifySub(sub, smallDiamond, clip8, expectedSmallDiamond);
+            VerifySub(sub, smallDiamond, clip9, expectedSmallDiamond);
+            VerifySub(sub, smallDiamond, clip10, expectedSmallDiamond);
+            VerifySub(sub, smallDiamond, clip11, expectedSmallDiamond);
+            VerifySub(sub, diamond, clip12, expectedDiamond);
+            VerifySub(sub, diamond, clip13, expectedDiamond);
+            VerifySub(sub, diamond, clip14, expectedDiamond);
+            VerifySub(sub, diamond, clip15, expectedDiamond);
+            VerifySub(sub, diamond, clip16, expectedDiamond);
+            VerifySub(sub, diamond, clip17, expectedDiamond);
+            VerifySub(sub, diamond, clip18, expectedDiamond);
+            VerifySub(sub, diamond, clip19, expectedDiamond);
+            VerifySub(sub, octagon, clip20, expectedOctagon);
+            VerifySub(sub, octagon, clip21, expectedOctagon);
+            VerifySub(sub, octagon, clip22, expectedOctagon);
+            VerifySub(sub, octagon, clip23, expectedOctagon);
+            VerifySub(sub, octagon, clip24, expectedOctagon);
+            VerifySub(sub, octagon, clip25, expectedOctagon);
+            VerifySub(sub, octagon, clip26, expectedOctagon);
+            VerifySub(sub, octagon, clip27, expectedOctagon);
+            VerifySub(sub, diamond, clip28, expectedDiamond);
+            VerifySub(sub, diamond, clip29, expectedDiamond);
+            VerifySub(sub, diamond, clip30, expectedDiamond);
+            VerifySub(sub, diamond, clip31, expectedDiamond);
+            VerifySub(sub, octagon, clip32, expectedOctagon);
+            VerifySub(sub, octagon, clip33, expectedOctagon);
+            VerifySub(sub, octagon, clip34, expectedOctagon);
+            VerifySub(sub, octagon, clip35, expectedOctagon);
         }
 
         public static void ConvexCasesProducingHoles(IPolygonSubtractor sub) {
