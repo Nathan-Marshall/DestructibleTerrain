@@ -88,11 +88,11 @@ namespace DestructibleTerrain.Destructible
             }
         }
         
-        protected void ApplyCollider(DTConvexPolygonGroup polyGroup) {
+        protected void ApplyCollider(DTConvexPolygroup polygroup) {
             PolygonCollider2D polygonCollider = GetComponent<PolygonCollider2D>();
-            polygonCollider.pathCount = polyGroup.Count;
-            for (int i = 0; i < polyGroup.Count; i++) {
-                polygonCollider.SetPath(i, polyGroup[i]);
+            polygonCollider.pathCount = polygroup.Count;
+            for (int i = 0; i < polygroup.Count; i++) {
+                polygonCollider.SetPath(i, polygroup[i]);
             }
 
             if (GetComponent<Rigidbody2D>().mass < MassCutoff) {

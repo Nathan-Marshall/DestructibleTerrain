@@ -36,7 +36,7 @@ namespace DestructibleTerrain.Triangulation
             return new DTMesh(vertices, triangles);
         }
 
-        public DTConvexPolygonGroup PolygonToTriangleList(DTPolygon subject) {
+        public DTConvexPolygroup PolygonToTriangleList(DTPolygon subject) {
             // Format polygon input and execute
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
@@ -46,7 +46,7 @@ namespace DestructibleTerrain.Triangulation
             IMesh triangleNetOutput = polygon.Triangulate();
 
             // Convert Triangle.NET output into poly group
-            return new DTConvexPolygonGroup(triangleNetOutput.Triangles.Select(t => t.ToVertexList()).ToList());
+            return new DTConvexPolygroup(triangleNetOutput.Triangles.Select(t => t.ToVertexList()).ToList());
         }
     }
 

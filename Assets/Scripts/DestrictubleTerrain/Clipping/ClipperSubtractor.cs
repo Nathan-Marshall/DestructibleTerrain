@@ -48,20 +48,20 @@ namespace DestructibleTerrain.Clipping
 
             // Execute subtraction and store result in a PolyTree so that we can easily identify holes
             PolyTree clipperOutput = new PolyTree();
-            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftPositive);
+            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNonZero);
 
             // Convert Polytree into list of DTPolygons
             return clipperOutput.ToDTPolygons();
         }
         
-        public List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons) {
+        public List<List<DTPolygon>> SubtractPolygroup(IEnumerable<DTPolygon> inputPolygroup, IEnumerable<DTPolygon> clippingPolygons) {
             // No bounds check. We could do a bounds check to return now if the polygroups are entirely
             // disjoint, but we do that in the explosion executor anyway
 
             clipper.Clear();
 
             // Add subject polygon paths
-            foreach (DTPolygon poly in inputPolyGroup) {
+            foreach (DTPolygon poly in inputPolygroup) {
                 // Convert the points to IntPoint and add that path to Clipper
                 List<IntPoint> contourPath = poly.Contour.ToIntPointList();
                 clipper.AddPath(contourPath, PolyType.ptSubject, true);
@@ -84,7 +84,7 @@ namespace DestructibleTerrain.Clipping
 
             // Execute subtraction and store result in a PolyTree so that we can easily identify holes
             PolyTree clipperOutput = new PolyTree();
-            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNegative);
+            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNonZero);
 
             // Convert Polytree into list of DTPolygons
             List<DTPolygon> clipperOutputDT = clipperOutput.ToDTPolygons();
@@ -95,19 +95,19 @@ namespace DestructibleTerrain.Clipping
 
         // WARNING: This implementation is currently very volatile and can cause multiple input polygon groups to fuse
         // together if a vertex from one is very close to the vertex of another.
-        public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
+        public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolygroups, IEnumerable<DTPolygon> clippingPolygons) {
             // No bounds check. We could do a bounds check to return early if polygroups were entirely
             // disjoint, but we do that in the explosion executor anyway
 
             clipper.Clear();
 
             // Map the points of each polygon to the index of the polygon group to which the polygon belongs
-            Dictionary<Vector2, int> inputPointToPolyGroup = new Dictionary<Vector2, int>(new DTUtility.ApproximateVector2Comparer());
+            Dictionary<Vector2, int> inputPointToPolygroup = new Dictionary<Vector2, int>(new DTUtility.ApproximateVector2Comparer());
 
             // Add subject polygon paths
             {
                 int inputGroupIndex = 0;
-                foreach (IEnumerable<DTPolygon> inputPolygons in inputPolyGroups) {
+                foreach (IEnumerable<DTPolygon> inputPolygons in inputPolygroups) {
                     foreach (DTPolygon poly in inputPolygons) {
                         // Convert the points to IntPoint and add that path to Clipper
                         List<IntPoint> contourPath = poly.Contour.ToIntPointList();
@@ -115,7 +115,7 @@ namespace DestructibleTerrain.Clipping
 
                         // Map the points to the subject group index
                         foreach (Vector2 point in poly.Contour) {
-                            inputPointToPolyGroup[point] = inputGroupIndex;
+                            inputPointToPolygroup[point] = inputGroupIndex;
                         }
 
                         foreach (var hole in poly.Holes) {
@@ -142,7 +142,7 @@ namespace DestructibleTerrain.Clipping
 
             // Execute subtraction and store result in a PolyTree so that we can easily identify holes
             PolyTree clipperOutput = new PolyTree();
-            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNegative);
+            clipper.Execute(ClipType.ctDifference, clipperOutput, PolyFillType.pftEvenOdd, PolyFillType.pftNonZero);
 
             List<DTPolygon> clipperOutputDT = clipperOutput.ToDTPolygons();
 
@@ -153,15 +153,15 @@ namespace DestructibleTerrain.Clipping
             }
 
             // Map all output groups to an input group index.
-            int numInputGroups = inputPolyGroups.Count();
+            int numInputGroups = inputPolygroups.Count();
             List<List<HashSet<Vector2>>> inputOutputGroupMappings = new List<List<HashSet<Vector2>>>(numInputGroups);
-            foreach (var s in inputPolyGroups) {
+            foreach (var s in inputPolygroups) {
                 inputOutputGroupMappings.Add(new List<HashSet<Vector2>>());
             }
             // Output groups that could not be mapped are in their own list.
             List<HashSet<Vector2>> unmappedOutputGroups = new List<HashSet<Vector2>>();
             foreach (var points in outputPointGroups) {
-                int inputGroupIndex = points.GetFirstPointGroupIndex(inputPointToPolyGroup);
+                int inputGroupIndex = points.GetFirstPointGroupIndex(inputPointToPolygroup);
                 if (inputGroupIndex >= 0) {
                     inputOutputGroupMappings[inputGroupIndex].Add(points);
                 } else {
@@ -181,7 +181,7 @@ namespace DestructibleTerrain.Clipping
             }
             foreach (var poly in clipperOutputDT) {
                 // Find the correct place to put this polygon in the output structure
-                int inputGroupIndex = poly.GetFirstPointGroupIndex(inputPointToPolyGroup);
+                int inputGroupIndex = poly.GetFirstPointGroupIndex(inputPointToPolygroup);
                 if (inputGroupIndex >= 0) {
                     int outputGroupIndex = poly.GetFirstPointGroupIndex(inputOutputGroupMappings[inputGroupIndex]);
                     if (outputGroupIndex >= 0) {

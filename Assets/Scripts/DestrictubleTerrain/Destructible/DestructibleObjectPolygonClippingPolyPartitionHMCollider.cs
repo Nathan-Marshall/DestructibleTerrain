@@ -38,10 +38,10 @@ namespace DestructibleTerrain.Destructible
 
             // Collider from polygon
             DTProfileMarkers.HertelMehlhorn.Begin();
-            DTConvexPolygonGroup hmPolyGroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolyGroup(dtMesh);
+            DTConvexPolygroup hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(dtMesh);
             DTProfileMarkers.HertelMehlhorn.End();
 
-            ApplyCollider(hmPolyGroup);
+            ApplyCollider(hmPolygroup);
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);

@@ -81,6 +81,24 @@ public static class DTUtility
         return a.Count == 0 && b.Count == 0;
     }
 
+    public static bool PolygroupsEqual (IEnumerable<IEnumerable<DTPolygon>> inA, IEnumerable<IEnumerable<DTPolygon>> inB) {
+        if (inA.Count() != inB.Count()) {
+            return false;
+        }
+        List<IEnumerable<DTPolygon>> a = new List<IEnumerable<DTPolygon>>(inA);
+        List<IEnumerable<DTPolygon>> b = new List<IEnumerable<DTPolygon>>(inB);
+        for (int i = 0; i < a.Count; ++i) {
+            for (int j = 0; j < b.Count; ++j) {
+                if (ContainSameValues(a[i], b[j])) {
+                    a.RemoveAt(i--);
+                    b.RemoveAt(j--);
+                    break;
+                }
+            }
+        }
+        return a.Count == 0 && b.Count == 0;
+    }
+
     public static T GetCircular<T>(this IList<T> list, int i) {
         i = ((i % list.Count) + list.Count) % list.Count;
         return list[i];
@@ -220,16 +238,16 @@ public static class DTUtility
         return b;
     }
 
-    public static DTConvexPolygonGroup TriangulateAll(List<DTPolygon> polygonList, ITriangulator triangulator) {
-        return new DTConvexPolygonGroup(polygonList.SelectMany(
+    public static DTConvexPolygroup TriangulateAll(List<DTPolygon> polygonList, ITriangulator triangulator) {
+        return new DTConvexPolygroup(polygonList.SelectMany(
             poly => triangulator.PolygonToTriangleList(poly)).ToList());
     }
 
-    public static DTConvexPolygonGroup ToPolyGroup(this DTMesh mesh) {
-        return new DTConvexPolygonGroup(mesh.Partitions.Select(part => part.Select(i => mesh.Vertices[i]).ToList()).ToList());
+    public static DTConvexPolygroup ToPolygroup(this DTMesh mesh) {
+        return new DTConvexPolygroup(mesh.Partitions.Select(part => part.Select(i => mesh.Vertices[i]).ToList()).ToList());
     }
     
-    public static DTMesh ToMesh(this DTConvexPolygonGroup polyGroup) {
+    public static DTMesh ToMesh(this DTConvexPolygroup polygroup) {
         const long FixedDecimalConversion = 100000;
 
         IntPoint ToIntPoint(Vector2 p) {
@@ -238,7 +256,7 @@ public static class DTUtility
 
         Dictionary<IntPoint, int> vertexMap = new Dictionary<IntPoint, int>();
         List<Vector2> vertices = new List<Vector2>();
-        foreach (var poly in polyGroup) {
+        foreach (var poly in polygroup) {
             // Assume no holes
             foreach (var v in poly) {
                 try {
@@ -249,8 +267,8 @@ public static class DTUtility
             }
         }
 
-        List<List<int>> partitions = new List<List<int>>(polyGroup.Count);
-        foreach (var poly in polyGroup) {
+        List<List<int>> partitions = new List<List<int>>(polygroup.Count);
+        foreach (var poly in polygroup) {
             List<int> indices = new List<int>();
             // Assume no holes
             foreach (var v in poly) {

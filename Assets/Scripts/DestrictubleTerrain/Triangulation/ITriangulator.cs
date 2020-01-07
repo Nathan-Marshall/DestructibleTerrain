@@ -10,6 +10,6 @@ namespace DestructibleTerrain.Triangulation
     {
         DTMesh PolygonToMesh(DTPolygon subject);
 
-        DTConvexPolygonGroup PolygonToTriangleList(DTPolygon subject);
+        DTConvexPolygroup PolygonToTriangleList(DTPolygon subject);
     }
 }

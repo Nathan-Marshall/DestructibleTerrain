@@ -204,16 +204,16 @@ namespace DestructibleTerrain.HertelMehlhorn
                 tempPartitions.Where(partition => partition.Count > 0).ToList());
         }
 
-        public DTMesh ExecuteToMesh(DTConvexPolygonGroup input) {
+        public DTMesh ExecuteToMesh(DTConvexPolygroup input) {
             return ExecuteToMesh(input.ToMesh());
         }
 
-        public DTConvexPolygonGroup ExecuteToPolyGroup(DTMesh input) {
-            return ExecuteToMesh(input).ToPolyGroup();
+        public DTConvexPolygroup ExecuteToPolygroup(DTMesh input) {
+            return ExecuteToMesh(input).ToPolygroup();
         }
 
-        public DTConvexPolygonGroup ExecuteToPolyGroup(DTConvexPolygonGroup input) {
-            return ExecuteToPolyGroup(input.ToMesh());
+        public DTConvexPolygroup ExecuteToPolygroup(DTConvexPolygroup input) {
+            return ExecuteToPolygroup(input.ToMesh());
         }
     }
 }

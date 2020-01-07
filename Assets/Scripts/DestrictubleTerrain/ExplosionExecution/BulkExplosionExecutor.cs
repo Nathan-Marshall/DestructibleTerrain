@@ -63,8 +63,8 @@ namespace DestructibleTerrain.ExplosionExecution
                     if (i >= relevantObjectPolygons.Count) {
                         GameObject go = new GameObject();
                         DestructibleObject newObj = go.AddComponent<DestructibleObject>();
-                        List<DTPolygon> polyGroup = result[i][0];
-                        newObj.ApplyTransformedPolygonList(polyGroup);
+                        List<DTPolygon> polygroup = result[i][0];
+                        newObj.ApplyTransformedPolygonList(polygroup);
                         pendingAdditions.Add(newObj);
 
                         continue;
@@ -80,21 +80,21 @@ namespace DestructibleTerrain.ExplosionExecution
                         continue;
                     } else {
                         // Otherwise apply the output polygons (fragments) to GameObjects (new or reused)
-                        foreach (List<DTPolygon> polyGroup in result[i]) {
-                            if (polyGroup != result[i].Last()) {
+                        foreach (List<DTPolygon> polygroup in result[i]) {
+                            if (polygroup != result[i].Last()) {
                                 // Duplicate the GameObject that was clipped by the explosion, so that we maintain properties such as velocity
                                 GameObject go = UnityEngine.Object.Instantiate(dtObj.gameObject, dtObj.transform.parent);
                                 DestructibleObject newObj = go.GetComponent<DestructibleObject>();
 
                                 // Apply the new clipped polygon
-                                newObj.ApplyTransformedPolygonList(polyGroup);
+                                newObj.ApplyTransformedPolygonList(polygroup);
 
                                 // Add it to the objectList, but not until after finished processing this explosion
                                 pendingAdditions.Add(newObj);
                                 continue;
                             } else {
                                 // Reuse the existing GameObject by applying the new clipped polygon to it
-                                dtObj.ApplyTransformedPolygonList(polyGroup);
+                                dtObj.ApplyTransformedPolygonList(polygroup);
                                 continue;
                             }
                         }

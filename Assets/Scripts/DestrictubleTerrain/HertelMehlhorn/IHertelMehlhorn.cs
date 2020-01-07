@@ -10,10 +10,10 @@ namespace DestructibleTerrain.HertelMehlhorn
     {
         DTMesh ExecuteToMesh(DTMesh input);
 
-        DTMesh ExecuteToMesh(DTConvexPolygonGroup input);
+        DTMesh ExecuteToMesh(DTConvexPolygroup input);
 
-        DTConvexPolygonGroup ExecuteToPolyGroup(DTMesh input);
+        DTConvexPolygroup ExecuteToPolygroup(DTMesh input);
 
-        DTConvexPolygonGroup ExecuteToPolyGroup(DTConvexPolygonGroup input);
+        DTConvexPolygroup ExecuteToPolygroup(DTConvexPolygroup input);
     }
 }

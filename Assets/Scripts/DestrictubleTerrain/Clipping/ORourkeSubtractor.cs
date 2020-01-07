@@ -210,31 +210,26 @@ namespace DestructibleTerrain.Clipping
             return outputPolygons;
         }
         
-        public List<List<DTPolygon>> SubtractPolyGroup(IEnumerable<DTPolygon> inputPolyGroup, IEnumerable<DTPolygon> clippingPolygons) {
-            List<List<DTPolygon>> outputPolyGroups = new List<List<DTPolygon>>(inputPolyGroup.Select(
-                    poly => new List<DTPolygon>() { poly }));
-            int i = 0;
-            foreach (DTPolygon inputPoly in inputPolyGroup) {
-                List<DTPolygon> workingPolyGroup = outputPolyGroups[i];
-                foreach (DTPolygon clippingPoly in clippingPolygons) {
-                    List<DTPolygon> newWorkingPolyGroup = new List<DTPolygon>();
-                    foreach (DTPolygon workingPoly in workingPolyGroup) {
-                        newWorkingPolyGroup.AddRange(Subtract(workingPoly, clippingPoly));
-                    }
-                    workingPolyGroup = newWorkingPolyGroup;
+        public List<List<DTPolygon>> SubtractPolygroup(IEnumerable<DTPolygon> inputPolygroup, IEnumerable<DTPolygon> clippingPolygons) {
+            // Clip all input polygons by all clipping polygons
+            List<DTPolygon> workingPolygons = new List<DTPolygon>(inputPolygroup);
+            foreach (DTPolygon clippingPoly in clippingPolygons) {
+                List<DTPolygon> newWorkingPolygons = new List<DTPolygon>();
+                foreach (DTPolygon workingPoly in workingPolygons) {
+                    newWorkingPolygons.AddRange(Subtract(workingPoly, clippingPoly));
                 }
-                outputPolyGroups[i] = workingPolyGroup;
-                ++i;
+                workingPolygons = newWorkingPolygons;
             }
-            return outputPolyGroups;
+
+            return workingPolygons.CreatePolygroups();
         }
 
-        public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolyGroups, IEnumerable<DTPolygon> clippingPolygons) {
-            List<List<List<DTPolygon>>> outputPolyGroupGroups = new List<List<List<DTPolygon>>>();
-            foreach (IEnumerable<DTPolygon> inputPolyGroup in inputPolyGroups) {
-                outputPolyGroupGroups.Add(SubtractPolyGroup(inputPolyGroup, clippingPolygons));
+        public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolygroups, IEnumerable<DTPolygon> clippingPolygons) {
+            List<List<List<DTPolygon>>> outputPolygroupGroups = new List<List<List<DTPolygon>>>();
+            foreach (IEnumerable<DTPolygon> inputPolygroup in inputPolygroups) {
+                outputPolygroupGroups.Add(SubtractPolygroup(inputPolygroup, clippingPolygons));
             }
-            return outputPolyGroupGroups;
+            return outputPolygroupGroups;
         }
 
         private Vector2? EntranceIntersection() {

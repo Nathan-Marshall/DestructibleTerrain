@@ -40,20 +40,20 @@ namespace DestructibleTerrain.HertelMehlhorn
 
 
         public DTMesh ExecuteToMesh(DTMesh input) {
-            return ExecuteToMesh(input.ToPolyGroup());
+            return ExecuteToMesh(input.ToPolygroup());
         }
 
-        public DTMesh ExecuteToMesh(DTConvexPolygonGroup input) {
-            return ExecuteToPolyGroup(input).ToMesh();
+        public DTMesh ExecuteToMesh(DTConvexPolygroup input) {
+            return ExecuteToPolygroup(input).ToMesh();
         }
 
-        public DTConvexPolygonGroup ExecuteToPolyGroup(DTMesh input) {
-            return ExecuteToPolyGroup(input.ToPolyGroup());
+        public DTConvexPolygroup ExecuteToPolygroup(DTMesh input) {
+            return ExecuteToPolygroup(input.ToPolygroup());
         }
 
-        public DTConvexPolygonGroup ExecuteToPolyGroup(DTConvexPolygonGroup input) {
+        public DTConvexPolygroup ExecuteToPolygroup(DTConvexPolygroup input) {
             HertelMehlhorn(input.ToTPPLPolyList(), out TPPLPolyList output);
-            return output.ToPolyGroup();
+            return output.ToPolygroup();
         }
 
 
@@ -217,10 +217,10 @@ namespace DestructibleTerrain.HertelMehlhorn
 
     static class ExtensionsForPolyPartitionHM
     {
-        public static TPPLPolyList ToTPPLPolyList(this DTConvexPolygonGroup polyGroup) {
+        public static TPPLPolyList ToTPPLPolyList(this DTConvexPolygroup polygroup) {
             TPPLPolyList polyList = new TPPLPolyList();
 
-            foreach (var poly in polyGroup) {
+            foreach (var poly in polygroup) {
                 TPPLPoly tpplHole = new TPPLPoly(poly.Count);
                 tpplHole.SetHole(true);
                 for (int i = 0; i < poly.Count; i++) {
@@ -232,8 +232,8 @@ namespace DestructibleTerrain.HertelMehlhorn
             return polyList;
         }
 
-        public static DTConvexPolygonGroup ToPolyGroup(this TPPLPolyList polyList) {
-            return new DTConvexPolygonGroup(polyList.Select(tpplPoly => tpplPoly.GetPoints().Select(
+        public static DTConvexPolygroup ToPolygroup(this TPPLPolyList polyList) {
+            return new DTConvexPolygroup(polyList.Select(tpplPoly => tpplPoly.GetPoints().Select(
                 p => new Vector2(p.x, p.y)).ToList()).ToList());
         }
     }

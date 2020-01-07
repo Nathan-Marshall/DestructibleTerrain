@@ -7,15 +7,15 @@ using UnityEngine;
 
 namespace DestructibleTerrain
 {
-    public class DTConvexPolygonGroup : List<List<Vector2>>
+    public class DTConvexPolygroup : List<List<Vector2>>
     {
-        public DTConvexPolygonGroup()
+        public DTConvexPolygroup()
             : base() { }
 
-        public DTConvexPolygonGroup(List<List<Vector2>> polygons)
+        public DTConvexPolygroup(List<List<Vector2>> polygons)
             : base(polygons) { }
 
-        public DTConvexPolygonGroup(List<DTPolygon> polygons)
+        public DTConvexPolygroup(List<DTPolygon> polygons)
             : base(polygons.Select(poly => poly.Contour).ToList()) { }
 
         public List<DTPolygon> ToPolygonList() {

@@ -12,31 +12,31 @@ namespace DestructibleTerrain.Destructible
 {
     public abstract class DestructibleObjectPolyPartitionHMClippingCustomHMCollider : DestructibleObject
     {
-        private DTConvexPolygonGroup hmPolyGroup;
+        private DTConvexPolygroup hmPolygroup;
 
         public override List<DTPolygon> GetTransformedPolygonList() {
-            if (hmPolyGroup == null) {
+            if (hmPolygroup == null) {
                 return null;
             }
 
             // Assume no holes in polygon list
-            return hmPolyGroup.Select(poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
+            return hmPolygroup.Select(poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
             DTProfileMarkers.Triangulation.Begin();
-            DTConvexPolygonGroup triangulatedPolyGroup = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
-            DTMesh dtMesh = triangulatedPolyGroup.ToMesh();
+            DTConvexPolygroup triangulatedPolygroup = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
+            DTMesh dtMesh = triangulatedPolygroup.ToMesh();
             DTProfileMarkers.Triangulation.End();
 
             // Collider from polygon
             DTProfileMarkers.HertelMehlhorn.Begin();
-            hmPolyGroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolyGroup(triangulatedPolyGroup);
+            hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(triangulatedPolygroup);
             DTProfileMarkers.HertelMehlhorn.End();
 
             // Collider from polygon
-            ApplyCollider(hmPolyGroup);
+            ApplyCollider(hmPolygroup);
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);

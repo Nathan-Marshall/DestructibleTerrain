@@ -119,11 +119,21 @@ public static class DTUnitTests
         private static readonly DTPolygon diamond = P(V(0, -1), V(1, 0), V(0, 1), V(-1, 0)); // start with bottom vertex
         private static readonly DTPolygon smallDiamond = P(V(0, -0.5f), V(0.5f, 0), V(0, 0.5f), V(-0.5f, 0)); // half width and height
         private static readonly DTPolygon octagon = P(V(-1, -1), V(0, -sqrt2), V(1, -1), V(sqrt2, 0), V(1, 1), V(0, sqrt2), V(-1, 1), V(-sqrt2, 0));
-        
-        // Return true if the subtraction result is equal to any of the expected outcomes
+
+        // Return true if the subtraction result of two polygons is equal to any of the expected outcomes
         private static void VerifySub(IPolygonSubtractor sub, DTPolygon subj, DTPolygon clip, params List<DTPolygon>[] expectedOutcomes) {
             foreach (var expectedOutcome in expectedOutcomes) {
                 if (DTUtility.ContainSameValues(expectedOutcome, sub.Subtract(subj, clip))) {
+                    return;
+                }
+            }
+            Assert.True(false);
+        }
+
+        // Return true if the subtraction result of two polygroups is equal to any of the expected outcomes
+        private static void VerifySubPolygroups(IPolygonSubtractor sub, List<DTPolygon> subj, List<DTPolygon> clip, params List<List<DTPolygon>>[] expectedOutcomes) {
+            foreach (var expectedOutcome in expectedOutcomes) {
+                if (DTUtility.PolygroupsEqual(expectedOutcome, sub.SubtractPolygroup(subj, clip))) {
                     return;
                 }
             }
@@ -410,6 +420,56 @@ public static class DTUnitTests
             VerifySub(sub, square, clip5, expected5, expected5Hole, expected5Single0, expected5Single1, expected5Single2, expected5Single3);
         }
 
+        public static void BasicPolygroup(IPolygonSubtractor sub) {
+            List<DTPolygon> subjectPolygroup = L(
+                P(V(-2.5f, 0.5f), V(2.5f, 0.5f), V(2.5f, 1.5f), V(-2.5f, 1.5f)),
+                P(V(-2.5f, -0.5f), V(2.5f, -0.5f), V(2.5f, 0.5f), V(-2.5f, 0.5f)),
+                P(V(-2.5f, -1.5f), V(2.5f, -1.5f), V(2.5f, -0.5f), V(-2.5f, -0.5f))
+            );
+
+            List<DTPolygon> clipPolygroup = L(
+                P(V(-1.5f, -1.5f), V(-0.5f, -1.5f), V(-0.5f, 1.5f), V(-1.5f, 1.5f)),
+                P(V(0.5f, -1.5f), V(1.5f, -1.5f), V(1.5f, 1.5f), V(0.5f, 1.5f))
+            );
+            
+            List<List<DTPolygon>> expectedPolygroups = L(
+                L(
+                    P(V(-2.5f, 0.5f), V(-1.5f, 0.5f), V(-1.5f, 1.5f), V(-2.5f, 1.5f)),
+                    P(V(-2.5f, -0.5f), V(-1.5f, -0.5f), V(-1.5f, 0.5f), V(-2.5f, 0.5f)),
+                    P(V(-2.5f, -1.5f), V(-1.5f, -1.5f), V(-1.5f, -0.5f), V(-2.5f, -0.5f))
+                ),
+                L(
+                    P(V(-0.5f, 0.5f), V(0.5f, 0.5f), V(0.5f, 1.5f), V(-0.5f, 1.5f)),
+                    P(V(-0.5f, -0.5f), V(0.5f, -0.5f), V(0.5f, 0.5f), V(-0.5f, 0.5f)),
+                    P(V(-0.5f, -1.5f), V(0.5f, -1.5f), V(0.5f, -0.5f), V(-0.5f, -0.5f))
+                ),
+                L(
+                    P(V(1.5f, 0.5f), V(2.5f, 0.5f), V(2.5f, 1.5f), V(1.5f, 1.5f)),
+                    P(V(1.5f, -0.5f), V(2.5f, -0.5f), V(2.5f, 0.5f), V(1.5f, 0.5f)),
+                    P(V(1.5f, -1.5f), V(2.5f, -1.5f), V(2.5f, -0.5f), V(1.5f, -0.5f))
+                )
+            );
+
+            // Clipper does this in a weird way and joins only the first polygroup into a single polygon
+            List<List<DTPolygon>> expectedPolygroupsJoinedFirst = L(
+                L(
+                    P(V(-2.5f, -1.5f), V(-1.5f, -1.5f), V(-1.5f, 1.5f), V(-2.5f, 1.5f))
+                ),
+                L(
+                    P(V(-0.5f, 0.5f), V(0.5f, 0.5f), V(0.5f, 1.5f), V(-0.5f, 1.5f)),
+                    P(V(-0.5f, -0.5f), V(0.5f, -0.5f), V(0.5f, 0.5f), V(-0.5f, 0.5f)),
+                    P(V(-0.5f, -1.5f), V(0.5f, -1.5f), V(0.5f, -0.5f), V(-0.5f, -0.5f))
+                ),
+                L(
+                    P(V(1.5f, 0.5f), V(2.5f, 0.5f), V(2.5f, 1.5f), V(1.5f, 1.5f)),
+                    P(V(1.5f, -0.5f), V(2.5f, -0.5f), V(2.5f, 0.5f), V(1.5f, 0.5f)),
+                    P(V(1.5f, -1.5f), V(2.5f, -1.5f), V(2.5f, -0.5f), V(1.5f, -0.5f))
+                )
+            );
+
+            VerifySubPolygroups(sub, subjectPolygroup, clipPolygroup, expectedPolygroups, expectedPolygroupsJoinedFirst);
+        }
+
 
 
         public static class Clipper
@@ -435,6 +495,11 @@ public static class DTUnitTests
             public static void ConvexCasesProducingHoles() {
                 Subtractors.ConvexCasesProducingHoles(sub);
             }
+
+            [Test]
+            public static void BasicPolygroup() {
+                Subtractors.BasicPolygroup(sub);
+            }
         }
 
         public static class ORourke
@@ -459,6 +524,11 @@ public static class DTUnitTests
             [Test]
             public static void ConvexCasesProducingHoles() {
                 Subtractors.ConvexCasesProducingHoles(sub);
+            }
+
+            [Test]
+            public static void BasicPolygroup() {
+                Subtractors.BasicPolygroup(sub);
             }
         }
     }
