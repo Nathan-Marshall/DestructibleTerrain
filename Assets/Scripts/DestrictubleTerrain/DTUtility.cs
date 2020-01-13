@@ -184,8 +184,13 @@ public static class DTUtility
             }
         }
 
-        // We now have a list of loops. Check which ones are inside the others, and mark those as holes.
+        // Start with holes already in the original polygon
         DTPolygon outPoly = new DTPolygon();
+        foreach (var hole in inPoly.Holes) {
+            outPoly.Holes.Add(hole);
+        }
+
+        // We now have a list of loops. Check which ones are inside the others, and mark those as holes as well.
         for (int i = 0; i < loops.Count; ++i) {
             if (loops[i] == null) {
                 continue;
