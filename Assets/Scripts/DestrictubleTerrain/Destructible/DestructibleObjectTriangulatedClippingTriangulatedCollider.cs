@@ -37,9 +37,10 @@ namespace DestructibleTerrain.Destructible
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
-            // Assume no holes in polygon list
             var newPolyList = transformedPolygonList.Select(poly => new DTPolygon(
-                poly.Contour.Select(InverseTransformPoint).ToList())).ToList();
+                poly.Contour.Select(InverseTransformPoint).ToList(),
+                poly.Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList()
+                )).ToList();
 
             ApplyPolygonList(newPolyList);
         }

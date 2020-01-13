@@ -1,5 +1,4 @@
-﻿using ClipperLib;
-using DestructibleTerrain;
+﻿using DestructibleTerrain;
 using DestructibleTerrain.Destructible;
 using DestructibleTerrain.Triangulation;
 using System;
@@ -248,20 +247,14 @@ public static class DTUtility
     }
     
     public static DTMesh ToMesh(this DTConvexPolygroup polygroup) {
-        const long FixedDecimalConversion = 100000;
-
-        IntPoint ToIntPoint(Vector2 p) {
-            return new IntPoint(p.x * FixedDecimalConversion, p.y * FixedDecimalConversion);
-        }
-
-        Dictionary<IntPoint, int> vertexMap = new Dictionary<IntPoint, int>();
+        Dictionary<Vector2, int> vertexMap = new Dictionary<Vector2, int>(new ApproximateVector2Comparer());
         List<Vector2> vertices = new List<Vector2>();
         foreach (var poly in polygroup) {
             // Assume no holes
             foreach (var v in poly) {
                 try {
                     // Add the vertex only if it has not already been added
-                    vertexMap.Add(ToIntPoint(v), vertices.Count);
+                    vertexMap.Add(v, vertices.Count);
                     vertices.Add(v);
                 } catch (ArgumentException) { }
             }
@@ -272,7 +265,7 @@ public static class DTUtility
             List<int> indices = new List<int>();
             // Assume no holes
             foreach (var v in poly) {
-                indices.Add(vertexMap[ToIntPoint(v)]);
+                indices.Add(vertexMap[v]);
             }
             partitions.Add(indices);
         }
