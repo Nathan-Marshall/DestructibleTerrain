@@ -22,6 +22,9 @@ namespace DestructibleTerrain.Triangulation
         private TriangleNetTriangulator() { }
 
         public DTMesh PolygonToMesh(DTPolygon subject) {
+            // Mark any unmarked holes in the contour, because Triangle.NET doesn't handle them properly
+            subject = DTUtility.IdentifyHoles(subject);
+
             // Format polygon input and execute
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
@@ -37,6 +40,9 @@ namespace DestructibleTerrain.Triangulation
         }
 
         public DTConvexPolygroup PolygonToTriangleList(DTPolygon subject) {
+            // Mark any unmarked holes in the contour, because Triangle.NET doesn't handle them properly
+            subject = DTUtility.IdentifyHoles(subject);
+
             // Format polygon input and execute
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
