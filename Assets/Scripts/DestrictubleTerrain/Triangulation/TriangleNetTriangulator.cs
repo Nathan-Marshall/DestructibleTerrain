@@ -42,6 +42,9 @@ namespace DestructibleTerrain.Triangulation
         public DTConvexPolygroup PolygonToTriangleList(DTPolygon subject) {
             // Mark any unmarked holes in the contour, because Triangle.NET doesn't handle them properly
             subject = DTUtility.IdentifyHoles(subject);
+            if (subject.Contour.Count < 3) {
+                return new DTConvexPolygroup();
+            }
 
             // Format polygon input and execute
             Polygon polygon = new Polygon();

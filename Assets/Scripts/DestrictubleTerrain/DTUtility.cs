@@ -125,19 +125,29 @@ public static class DTUtility
     }
 
     public static T GetCircular<T>(this IList<T> list, int i) {
+        if (list.Count == 0) {
+            throw new IndexOutOfRangeException("Cannot get circular index of empty list.");
+        }
         i = ((i % list.Count) + list.Count) % list.Count;
         return list[i];
     }
 
     // Removes unnecessary vertices
     public static List<Vector2> SimplifyContour(List<Vector2> inContour) {
-        List<Vector2> contour = inContour.ToList();
+        if (inContour.Count < 3) {
+            return null;
+        }
+
+        List<Vector2> contour = new List<Vector2>(inContour);
 
         for (int i = 0; i < contour.Count; ++i) {
             Vector2 fromPrev = contour.GetCircular(i) - contour.GetCircular(i - 1);
             Vector2 toNext = contour.GetCircular(i + 1) - contour.GetCircular(i);
             if (fromPrev.Cross(toNext) == 0) {
                 contour.RemoveAt((i % contour.Count + contour.Count) % contour.Count);
+                if (contour.Count < 3) {
+                    return null;
+                }
                 i -= 2;
             }
         }
@@ -153,6 +163,9 @@ public static class DTUtility
         while (workingContour.Count > 0) {
             // Simplify contour to remove edges that overlap the previous edge
             workingContour = SimplifyContour(workingContour);
+            if (workingContour == null) {
+                break;
+            }
             Dictionary<Vector2, int> vertices = new Dictionary<Vector2, int>(new ApproximateVector2Comparer());
             for (int i = 0; i < workingContour.Count; ++i) {
                 Vector2 v = workingContour[i];
@@ -196,12 +209,17 @@ public static class DTUtility
                 continue;
             }
             for (int j = i + 1; j < loops.Count; ++j) {
+                if (loops[j] == null) {
+                    continue;
+                }
                 if (QuickPolyInPoly(loops[i], loops[j])) {
                     outPoly.Holes.Add(loops[i]);
                     loops[i] = null;
+                    break;
                 } else if (QuickPolyInPoly(loops[j], loops[i])) {
                     outPoly.Holes.Add(loops[j]);
                     loops[j] = null;
+                    break;
                 }
             }
         }
@@ -293,13 +311,13 @@ public static class DTUtility
                 output.AddRange(a.GetRange(0, aIndex + 1));
                 // Add b after shared point
                 if (bIndex < b.Count - 1) {
-                    output.AddRange(b.GetRange(bIndex + 1, b.Count - bIndex));
+                    output.AddRange(b.GetRange(bIndex + 1, b.Count - bIndex - 1));
                 }
                 // Add b up to and including shared point
                 output.AddRange(b.GetRange(0, bIndex + 1));
                 // Add a after shared point
                 if (aIndex < a.Count - 1) {
-                    output.AddRange(a.GetRange(aIndex + 1, a.Count - aIndex));
+                    output.AddRange(a.GetRange(aIndex + 1, a.Count - aIndex - 1));
                 }
                 return output;
             }
@@ -310,8 +328,11 @@ public static class DTUtility
 
     // Removes unnecessary vertices
     public static DTPolygon Simplify(this DTPolygon inPoly) {
+        if (inPoly.Contour.Count == 0) {
+            return null;
+        }
         var simplifiedContour = SimplifyContour(inPoly.Contour);
-        if (simplifiedContour.Count == 0) {
+        if (simplifiedContour == null) {
             return null;
         }
 
