@@ -155,6 +155,30 @@ public static class DTUtility
         return contour;
     }
 
+    public static void SetCW(this List<Vector2> contour) {
+        if (contour.Count < 3) {
+            return;
+        }
+
+        Vector2 v0 = contour[1] - contour[0];
+        Vector2 v1 = contour[2] - contour[1];
+        if (v0.Cross(v1) > 0) {
+            contour.Reverse();
+        }
+    }
+
+    public static void SetCCW(this List<Vector2> contour) {
+        if (contour.Count < 3) {
+            return;
+        }
+
+        Vector2 v0 = contour[1] - contour[0];
+        Vector2 v1 = contour[2] - contour[1];
+        if (v0.Cross(v1) < 0) {
+            contour.Reverse();
+        }
+    }
+
     public static DTPolygon IdentifyHoles(this DTPolygon inPoly) {
         List<Vector2> workingContour = new List<Vector2>(inPoly.Contour);
         List<List<Vector2>> loops = new List<List<Vector2>>();
@@ -213,10 +237,12 @@ public static class DTUtility
                     continue;
                 }
                 if (QuickPolyInPoly(loops[i], loops[j])) {
+                    loops[i].SetCW();
                     outPoly.Holes.Add(loops[i]);
                     loops[i] = null;
                     break;
                 } else if (QuickPolyInPoly(loops[j], loops[i])) {
+                    loops[j].SetCW();
                     outPoly.Holes.Add(loops[j]);
                     loops[j] = null;
                     break;
@@ -227,6 +253,7 @@ public static class DTUtility
         // Join any remaining loops and make the result the contour of the new polygon
         for (int i = 1; i < loops.Count; ++i) {
             if (loops[i] != null) {
+                loops[i].SetCCW();
                 outPoly.Contour = JoinContours(outPoly.Contour, loops[i]);
             }
         }

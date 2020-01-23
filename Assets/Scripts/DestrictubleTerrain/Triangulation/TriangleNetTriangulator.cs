@@ -24,12 +24,20 @@ namespace DestructibleTerrain.Triangulation
         public DTMesh PolygonToMesh(DTPolygon subject) {
             // Mark any unmarked holes in the contour, because Triangle.NET doesn't handle them properly
             subject = DTUtility.IdentifyHoles(subject);
+            if (subject.Contour.Count < 3) {
+                return new DTMesh();
+            }
 
             // Format polygon input and execute
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
             foreach (var hole in subject.Holes) {
-                polygon.Add(new Contour(hole.ToVertexList()), true);
+                if (hole.Count >= 3) {
+                    try {
+                        polygon.Add(new Contour(hole.ToVertexList()), true);
+                    }
+                    catch (Exception) { }
+                }
             }
             IMesh triangleNetOutput = polygon.Triangulate();
 
@@ -50,7 +58,12 @@ namespace DestructibleTerrain.Triangulation
             Polygon polygon = new Polygon();
             polygon.Add(new Contour(subject.Contour.ToVertexList()), false);
             foreach (var hole in subject.Holes) {
-                polygon.Add(new Contour(hole.ToVertexList()), true);
+                if (hole.Count >= 3) {
+                    try {
+                        polygon.Add(new Contour(hole.ToVertexList()), true);
+                    }
+                    catch (Exception) {}
+                }
             }
             IMesh triangleNetOutput = polygon.Triangulate();
 

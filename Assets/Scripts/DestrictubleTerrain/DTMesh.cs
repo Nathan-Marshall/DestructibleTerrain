@@ -12,7 +12,10 @@ namespace DestructibleTerrain
         public List<Vector2> Vertices { get; set; }
         public List<List<int>> Partitions { get; set; }
 
-        public DTMesh() {}
+        public DTMesh() {
+            Vertices = new List<Vector2>();
+            Partitions = new List<List<int>>();
+        }
 
         public DTMesh(List<Vector2> vertices, List<List<int>> partitions) {
             Vertices = vertices;
