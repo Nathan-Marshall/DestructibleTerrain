@@ -16,13 +16,17 @@ using DO_Poly_Poly_TNet = DestructibleTerrain.Destructible.DestructibleObjectPol
 using DO_Poly_Tri_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingTriangulatedCollider_TriangleNetTriangulator;
 using DO_Tri_Tri_TNet = DestructibleTerrain.Destructible.DestructibleObjectTriangulatedClippingTriangulatedCollider_TriangleNetTriangulator;
 using DO_Poly_CHM_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingCustomHMCollider_TriangleNetTriangulator;
+using DO_CHM_CHM_TNet = DestructibleTerrain.Destructible.DestructibleObjectCustomHMClippingCustomHMCollider_TriangleNetTriangulator;
 using DO_Poly_PPHM_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolyPartitionHMCollider_TriangleNetTriangulator;
+using DO_PPHM_PPHM_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolyPartitionHMClippingPolyPartitionHMCollider_TriangleNetTriangulator;
 
 using DO_Poly_Poly_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolygonCollider_PolyPartitionEarClippingTriangulator;
 using DO_Poly_Tri_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingTriangulatedCollider_PolyPartitionEarClippingTriangulator;
 using DO_Tri_Tri_PPEC = DestructibleTerrain.Destructible.DestructibleObjectTriangulatedClippingTriangulatedCollider_PolyPartitionEarClippingTriangulator;
 using DO_Poly_CHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingCustomHMCollider_PolyPartitionEarClippingTriangulator;
+using DO_CHM_CHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectCustomHMClippingCustomHMCollider_PolyPartitionEarClippingTriangulator;
 using DO_Poly_PPHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolyPartitionHMCollider_PolyPartitionEarClippingTriangulator;
+using DO_PPHM_PPHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolyPartitionHMClippingPolyPartitionHMCollider_PolyPartitionEarClippingTriangulator;
 
 public static class DTPerfromanceTests
 {
@@ -31,6 +35,7 @@ public static class DTPerfromanceTests
     private static readonly IExplosionExecutor TrueEE = TrueBulkExplosionExecutor.Instance;
 
     private static readonly IPolygonSubtractor ClipperSub = ClipperSubtractor.Instance;
+    private static readonly IPolygonSubtractor ORourkeSub = ORourkeSubtractor.Instance;
 
     public static class ProfilerMarkers {
         public static readonly string Namespace = "DTPerformanceTests";
@@ -334,16 +339,6 @@ public static class DTPerfromanceTests
             [UnityTest, Performance] public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Poly_Tri_TNet>(); }
         }
 
-        public static class Tri_Tri
-        {
-            //[UnityTest, Performance] public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Tri_Tri_TNet>(); }
-            //[UnityTest, Performance] public static IEnumerator Solids200() { yield return CollisionTestSolids200<DO_Tri_Tri_TNet>(); }
-            //[UnityTest, Performance] public static IEnumerator Solids400() { yield return CollisionTestSolids400<DO_Tri_Tri_TNet>(); }
-            //[UnityTest, Performance] public static IEnumerator Rings100() { yield return CollisionTestRings100<DO_Tri_Tri_TNet>(); }
-            //[UnityTest, Performance] public static IEnumerator Rings200() { yield return CollisionTestRings200<DO_Tri_Tri_TNet>(); }
-            //[UnityTest, Performance] public static IEnumerator Rings400() { yield return CollisionTestRings400<DO_Tri_Tri_TNet>(); }
-        }
-
         public static class Poly_CHM
         {
             //[UnityTest, Performance] public static IEnumerator Solids100() { yield return CollisionTestSolids100<DO_Poly_CHM_TNet>(); }
@@ -367,115 +362,220 @@ public static class DTPerfromanceTests
 
     public static class ExplosionPerFrameTests
     {
-        public static class Poly_Poly
+        public static class Poly_Poly_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly_TNet> (IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Poly_Tri
+        public static class Poly_Tri_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Tri_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Tri_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Tri_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Tri_Tri
-        {
-            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(IterEE, ClipperSub); }
-            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(BulkEE, ClipperSub); }
-            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(TrueEE, ClipperSub); }
-        }
-
-        public static class Poly_CHM
+        public static class Poly_CHM_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_CHM_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_CHM_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_CHM_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Poly_PPHM
+        public static class Poly_PPHM_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_PPHM_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_PPHM_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_PPHM_TNet>(TrueEE, ClipperSub); }
         }
+
+        public static class Tri_Tri_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class CHM_CHM_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class PPHM_PPHM_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class Tri_Tri_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri_TNet>(TrueEE, ORourkeSub); }
+        }
+
+        public static class CHM_CHM_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM_TNet>(TrueEE, ORourkeSub); }
+        }
+
+        public static class PPHM_PPHM_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM_TNet>(TrueEE, ORourkeSub); }
+        }
     }
 
     public static class OneTime100ExplosionTests
     {
-        public static class Poly_Poly
+        public static class Poly_Poly_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Poly_Tri
+        public static class Poly_Tri_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Tri_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Tri_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Tri_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Tri_Tri
-        {
-            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(IterEE, ClipperSub); }
-            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(BulkEE, ClipperSub); }
-            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(TrueEE, ClipperSub); }
-        }
-
-        public static class Poly_CHM
+        public static class Poly_CHM_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_CHM_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_CHM_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_CHM_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Poly_PPHM
+        public static class Poly_PPHM_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_PPHM_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_PPHM_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_PPHM_TNet>(TrueEE, ClipperSub); }
         }
+
+        public static class Tri_Tri_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class CHM_CHM_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class PPHM_PPHM_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class Tri_Tri_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri_TNet>(TrueEE, ORourkeSub); }
+        }
+
+        public static class CHM_CHM_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM_TNet>(TrueEE, ORourkeSub); }
+        }
+
+        public static class PPHM_PPHM_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM_TNet>(TrueEE, ORourkeSub); }
+        }
     }
 
     public static class OneTimeLargeObjectExplosionTests
     {
-        public static class Poly_Poly
+        public static class Poly_Poly_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Poly_Tri
+        public static class Poly_Tri_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Tri_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Tri_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Tri_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Tri_Tri
-        {
-            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(IterEE, ClipperSub); }
-            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(BulkEE, ClipperSub); }
-            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(TrueEE, ClipperSub); }
-        }
-
-        public static class Poly_CHM
+        public static class Poly_CHM_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_CHM_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_CHM_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_CHM_TNet>(TrueEE, ClipperSub); }
         }
 
-        public static class Poly_PPHM
+        public static class Poly_PPHM_Clipper
         {
             [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_PPHM_TNet>(IterEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_PPHM_TNet>(BulkEE, ClipperSub); }
             //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_PPHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class Tri_Tri_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class CHM_CHM_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class PPHM_PPHM_Clipper
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM_TNet>(IterEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM_TNet>(BulkEE, ClipperSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM_TNet>(TrueEE, ClipperSub); }
+        }
+
+        public static class Tri_Tri_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri_TNet>(TrueEE, ORourkeSub); }
+        }
+
+        public static class CHM_CHM_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM_TNet>(TrueEE, ORourkeSub); }
+        }
+
+        public static class PPHM_PPHM_ORourke
+        {
+            [UnityTest, Performance] public static IEnumerator IterativeClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM_TNet>(IterEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator BulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM_TNet>(BulkEE, ORourkeSub); }
+            //[UnityTest, Performance] public static IEnumerator TrueBulkClipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM_TNet>(TrueEE, ORourkeSub); }
         }
     }
 }
