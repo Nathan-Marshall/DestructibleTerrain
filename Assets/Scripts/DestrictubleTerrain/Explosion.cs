@@ -22,7 +22,7 @@ public class Explosion
         float step = 2 * Mathf.PI / numPoints;
         for (int i = 0; i < numPoints; ++i) {
             float angle = i * step;
-            circle.Add(new Vector2(x + radius * Mathf.Cos(angle), y - radius * Mathf.Sin(angle)));
+            circle.Add(new Vector2(x + radius * Mathf.Cos(angle), y + radius * Mathf.Sin(angle)));
         }
 
         DTPolygon = new DTPolygon(circle);

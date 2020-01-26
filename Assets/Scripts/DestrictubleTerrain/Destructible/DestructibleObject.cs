@@ -123,7 +123,7 @@ namespace DestructibleTerrain.Destructible
             mf.sharedMesh = new Mesh() {
                 vertices = dtMesh.Vertices.Select(v => new Vector3(v.x, v.y)).ToArray(),
                 uv = dtMesh.Vertices.ToArray(),
-                triangles = dtMesh.Partitions.SelectMany(t => t.GetRange(0, 3)).ToArray()
+                triangles = dtMesh.Partitions.SelectMany(t => t.GetRange(0, 3).AsEnumerable().Reverse()).ToArray()
             };
         }
 

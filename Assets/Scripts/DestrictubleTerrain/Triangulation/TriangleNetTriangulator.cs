@@ -83,16 +83,14 @@ namespace DestructibleTerrain.Triangulation
         }
 
         public static List<int> ToIntList(this Triangle t) {
-            // Note that Triangle.NET outputs CCW but we want CW
-            return new List<int> { t.GetVertexID(2), t.GetVertexID(1), t.GetVertexID(0) };
+            return new List<int> { t.GetVertexID(0), t.GetVertexID(1), t.GetVertexID(2) };
         }
 
         public static List<Vector2> ToVertexList(this Triangle t) {
-            // Note that Triangle.NET outputs CCW but we want CW
             return new List<Vector2> {
-                t.GetVertex(2).ToVector2(),
+                t.GetVertex(0).ToVector2(),
                 t.GetVertex(1).ToVector2(),
-                t.GetVertex(0).ToVector2()
+                t.GetVertex(2).ToVector2()
             };
         }
 
