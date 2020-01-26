@@ -121,9 +121,9 @@ public static class DTUnitTests
         private static readonly DTPolygon octagon = P(V(-1, -1), V(0, -sqrt2), V(1, -1), V(sqrt2, 0), V(1, 1), V(0, sqrt2), V(-1, 1), V(-sqrt2, 0));
 
         // Return true if the subtraction result of two polygons is equal to any of the expected outcomes
-        private static void VerifySub(IPolygonSubtractor sub, DTPolygon subj, DTPolygon clip, params List<DTPolygon>[] expectedOutcomes) {
+        private static void VerifyPolygons(List<DTPolygon> result, params List<DTPolygon>[] expectedOutcomes) {
             foreach (var expectedOutcome in expectedOutcomes) {
-                if (DTUtility.ContainSameValues(expectedOutcome, sub.Subtract(subj, clip))) {
+                if (DTUtility.ContainSameValues(expectedOutcome, result)) {
                     return;
                 }
             }
@@ -131,9 +131,9 @@ public static class DTUnitTests
         }
 
         // Return true if the subtraction result of two polygroups is equal to any of the expected outcomes
-        private static void VerifySubPolygroups(IPolygonSubtractor sub, List<DTPolygon> subj, List<DTPolygon> clip, params List<List<DTPolygon>>[] expectedOutcomes) {
+        private static void VerifyPolygroups(List<List<DTPolygon>> result, params List<List<DTPolygon>>[] expectedOutcomes) {
             foreach (var expectedOutcome in expectedOutcomes) {
-                if (DTUtility.PolygroupsEqual(expectedOutcome, sub.SubtractPolygroup(subj, clip))) {
+                if (DTUtility.PolygroupsEqual(expectedOutcome, result)) {
                     return;
                 }
             }
@@ -175,18 +175,18 @@ public static class DTUnitTests
             // Complete removal
             List<DTPolygon> empty = new List<DTPolygon>();
 
-            VerifySub(sub, square, clip0, expected0);
-            VerifySub(sub, square, clip1, expected1);
-            VerifySub(sub, square, clip2, expected2);
-            VerifySub(sub, square, clip3, expected3);
-            VerifySub(sub, square, clip4, expected4);
-            VerifySub(sub, square, clip5, expected5);
-            VerifySub(sub, square, clip6, expected6);
-            VerifySub(sub, square, clip7, expected7);
-            VerifySub(sub, square, clip8, expected8);
+            VerifyPolygons(sub.Subtract(square, clip0), expected0);
+            VerifyPolygons(sub.Subtract(square, clip1), expected1);
+            VerifyPolygons(sub.Subtract(square, clip2), expected2);
+            VerifyPolygons(sub.Subtract(square, clip3), expected3);
+            VerifyPolygons(sub.Subtract(square, clip4), expected4);
+            VerifyPolygons(sub.Subtract(square, clip5), expected5);
+            VerifyPolygons(sub.Subtract(square, clip6), expected6);
+            VerifyPolygons(sub.Subtract(square, clip7), expected7);
+            VerifyPolygons(sub.Subtract(square, clip8), expected8);
 
             // Complete removal
-            VerifySub(sub, smallSquare, square, empty);
+            VerifyPolygons(sub.Subtract(smallSquare, square), empty);
         }
 
         public static void ConvexDegenerateIntersection(IPolygonSubtractor sub) {
@@ -246,28 +246,28 @@ public static class DTUnitTests
             List<DTPolygon> empty = new List<DTPolygon>();
 
             // Complete removal
-            VerifySub(sub, square, square, empty);
+            VerifyPolygons(sub.Subtract(square, square), empty);
 
-            VerifySub(sub, square, clip0, expected0);
-            VerifySub(sub, square, clip1, expected1);
-            VerifySub(sub, square, clip2, expected2);
-            VerifySub(sub, square, clip3, expected3);
-            VerifySub(sub, square, clip4, expected4);
-            VerifySub(sub, square, clip5, expected5);
-            VerifySub(sub, square, clip6, expected6);
-            VerifySub(sub, square, clip7, expected7);
-            VerifySub(sub, square, clip8, expected8);
-            VerifySub(sub, square, clip9, expected9);
-            VerifySub(sub, square, clip10, expected10);
-            VerifySub(sub, square, clip11, expected11);
-            VerifySub(sub, square, clip12, expected12);
-            VerifySub(sub, square, clip13, expected13);
-            VerifySub(sub, square, clip14, expected14);
-            VerifySub(sub, square, clip15, expected15);
-            VerifySub(sub, square, clip16, expected16);
-            VerifySub(sub, square, clip17, expected17);
-            VerifySub(sub, square, clip18, expected18);
-            VerifySub(sub, square, clip19, expected19);
+            VerifyPolygons(sub.Subtract(square, clip0), expected0);
+            VerifyPolygons(sub.Subtract(square, clip1), expected1);
+            VerifyPolygons(sub.Subtract(square, clip2), expected2);
+            VerifyPolygons(sub.Subtract(square, clip3), expected3);
+            VerifyPolygons(sub.Subtract(square, clip4), expected4);
+            VerifyPolygons(sub.Subtract(square, clip5), expected5);
+            VerifyPolygons(sub.Subtract(square, clip6), expected6);
+            VerifyPolygons(sub.Subtract(square, clip7), expected7);
+            VerifyPolygons(sub.Subtract(square, clip8), expected8);
+            VerifyPolygons(sub.Subtract(square, clip9), expected9);
+            VerifyPolygons(sub.Subtract(square, clip10), expected10);
+            VerifyPolygons(sub.Subtract(square, clip11), expected11);
+            VerifyPolygons(sub.Subtract(square, clip12), expected12);
+            VerifyPolygons(sub.Subtract(square, clip13), expected13);
+            VerifyPolygons(sub.Subtract(square, clip14), expected14);
+            VerifyPolygons(sub.Subtract(square, clip15), expected15);
+            VerifyPolygons(sub.Subtract(square, clip16), expected16);
+            VerifyPolygons(sub.Subtract(square, clip17), expected17);
+            VerifyPolygons(sub.Subtract(square, clip18), expected18);
+            VerifyPolygons(sub.Subtract(square, clip19), expected19);
         }
 
         public static void ConvexDegenerateNoIntersection(IPolygonSubtractor sub) {
@@ -321,42 +321,42 @@ public static class DTUnitTests
             List<DTPolygon> expectedSmallDiamond = L(smallDiamond);
             List<DTPolygon> expectedOctagon = L(octagon);
 
-            VerifySub(sub, diamond, clip0, expectedDiamond);
-            VerifySub(sub, diamond, clip1, expectedDiamond);
-            VerifySub(sub, diamond, clip2, expectedDiamond);
-            VerifySub(sub, diamond, clip3, expectedDiamond);
-            VerifySub(sub, diamond, clip4, expectedDiamond);
-            VerifySub(sub, diamond, clip5, expectedDiamond);
-            VerifySub(sub, diamond, clip6, expectedDiamond);
-            VerifySub(sub, diamond, clip7, expectedDiamond);
-            VerifySub(sub, smallDiamond, clip8, expectedSmallDiamond);
-            VerifySub(sub, smallDiamond, clip9, expectedSmallDiamond);
-            VerifySub(sub, smallDiamond, clip10, expectedSmallDiamond);
-            VerifySub(sub, smallDiamond, clip11, expectedSmallDiamond);
-            VerifySub(sub, diamond, clip12, expectedDiamond);
-            VerifySub(sub, diamond, clip13, expectedDiamond);
-            VerifySub(sub, diamond, clip14, expectedDiamond);
-            VerifySub(sub, diamond, clip15, expectedDiamond);
-            VerifySub(sub, diamond, clip16, expectedDiamond);
-            VerifySub(sub, diamond, clip17, expectedDiamond);
-            VerifySub(sub, diamond, clip18, expectedDiamond);
-            VerifySub(sub, diamond, clip19, expectedDiamond);
-            VerifySub(sub, octagon, clip20, expectedOctagon);
-            VerifySub(sub, octagon, clip21, expectedOctagon);
-            VerifySub(sub, octagon, clip22, expectedOctagon);
-            VerifySub(sub, octagon, clip23, expectedOctagon);
-            VerifySub(sub, octagon, clip24, expectedOctagon);
-            VerifySub(sub, octagon, clip25, expectedOctagon);
-            VerifySub(sub, octagon, clip26, expectedOctagon);
-            VerifySub(sub, octagon, clip27, expectedOctagon);
-            VerifySub(sub, diamond, clip28, expectedDiamond);
-            VerifySub(sub, diamond, clip29, expectedDiamond);
-            VerifySub(sub, diamond, clip30, expectedDiamond);
-            VerifySub(sub, diamond, clip31, expectedDiamond);
-            VerifySub(sub, octagon, clip32, expectedOctagon);
-            VerifySub(sub, octagon, clip33, expectedOctagon);
-            VerifySub(sub, octagon, clip34, expectedOctagon);
-            VerifySub(sub, octagon, clip35, expectedOctagon);
+            VerifyPolygons(sub.Subtract(diamond, clip0), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip1), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip2), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip3), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip4), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip5), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip6), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip7), expectedDiamond);
+            VerifyPolygons(sub.Subtract(smallDiamond, clip8), expectedSmallDiamond);
+            VerifyPolygons(sub.Subtract(smallDiamond, clip9), expectedSmallDiamond);
+            VerifyPolygons(sub.Subtract(smallDiamond, clip10), expectedSmallDiamond);
+            VerifyPolygons(sub.Subtract(smallDiamond, clip11), expectedSmallDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip12), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip13), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip14), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip15), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip16), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip17), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip18), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip19), expectedDiamond);
+            VerifyPolygons(sub.Subtract(octagon, clip20), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip21), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip22), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip23), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip24), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip25), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip26), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip27), expectedOctagon);
+            VerifyPolygons(sub.Subtract(diamond, clip28), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip29), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip30), expectedDiamond);
+            VerifyPolygons(sub.Subtract(diamond, clip31), expectedDiamond);
+            VerifyPolygons(sub.Subtract(octagon, clip32), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip33), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip34), expectedOctagon);
+            VerifyPolygons(sub.Subtract(octagon, clip35), expectedOctagon);
         }
 
         public static void ConvexCasesProducingHoles(IPolygonSubtractor sub) {
@@ -412,12 +412,12 @@ public static class DTUnitTests
             List<DTPolygon> expected5Single2 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(0, 1), V(1, 0), V(0, -1), V(-1, 0), V(0, 1), V(-1, 1)));
             List<DTPolygon> expected5Single3 = L(P(V(-1, -1), V(1, -1), V(1, 1), V(-1, 1), V(-1, 0), V(0, 1), V(1, 0), V(0, -1), V(-1, 0)));
 
-            VerifySub(sub, square, clip0, expected0);
-            VerifySub(sub, square, clip1, expected1, expected1Hole);
-            VerifySub(sub, square, clip2, expected2, expected2Hole);
-            VerifySub(sub, square, clip3, expected3, expected3Hole);
-            VerifySub(sub, square, clip4, expected4, expected4Hole);
-            VerifySub(sub, square, clip5, expected5, expected5Hole, expected5Single0, expected5Single1, expected5Single2, expected5Single3);
+            VerifyPolygons(sub.Subtract(square, clip0), expected0);
+            VerifyPolygons(sub.Subtract(square, clip1), expected1, expected1Hole);
+            VerifyPolygons(sub.Subtract(square, clip2), expected2, expected2Hole);
+            VerifyPolygons(sub.Subtract(square, clip3), expected3, expected3Hole);
+            VerifyPolygons(sub.Subtract(square, clip4), expected4, expected4Hole);
+            VerifyPolygons(sub.Subtract(square, clip5), expected5, expected5Hole, expected5Single0, expected5Single1, expected5Single2, expected5Single3);
         }
 
         public static void BasicPolygroup(IPolygonSubtractor sub) {
@@ -467,7 +467,46 @@ public static class DTUnitTests
                 )
             );
 
-            VerifySubPolygroups(sub, subjectPolygroup, clipPolygroup, expectedPolygroups, expectedPolygroupsJoinedFirst);
+            VerifyPolygroups(sub.SubtractPolygroup(subjectPolygroup, clipPolygroup), expectedPolygroups, expectedPolygroupsJoinedFirst);
+        }
+
+        public static void DO_Subtraction(IPolygonSubtractor sub, DO_Tri_Tri_TNet dtObject, float x, float y) {
+            DTPolygon box = new DTPolygon(square.Contour, L(smallSquare.Contour));
+            
+            dtObject.transform.position = new Vector3(x, y, 0);
+            dtObject.ApplyPolygonList(L(box));
+
+            Explosion explosion = new Explosion(x + 1, y + 1, 0.2f, 8);
+
+            IterEE.ExecuteExplosions(L(explosion), L(dtObject), sub);
+        }
+
+        //[Test]
+        public static void DO_Subtraction() {
+            var clipperGO = new GameObject().AddComponent<DO_Tri_Tri_TNet>();
+            var orourkeGO = new GameObject().AddComponent<DO_Tri_Tri_TNet>();
+
+            Subtractors.DO_Subtraction(ClipperSub, clipperGO, -2, 0);
+            Subtractors.DO_Subtraction(ORourkeSub, orourkeGO, 2, 0);
+
+            var clipperList = clipperGO.GetTransformedPolygonList();
+            for (int i = 0; i < clipperList.Count; ++i) {
+                clipperList[i] = clipperList[i].Simplify();
+                if (clipperList[i] == null) {
+                    clipperList.RemoveAt(i--);
+                }
+            }
+
+            var orourkeList = orourkeGO.GetTransformedPolygonList();
+            for (int i = 0; i < orourkeList.Count; ++i) {
+                orourkeList[i] = orourkeList[i].Simplify();
+                if (orourkeList[i] == null) {
+                    orourkeList.RemoveAt(i--);
+                }
+            }
+
+            VerifyPolygroups(L(clipperList), L(orourkeList));
+            DTUtility.CleanUpGameObjects();
         }
 
 

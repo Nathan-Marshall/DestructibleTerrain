@@ -129,10 +129,7 @@ public static class DTPerfromanceTests
     // Destroys all GameObjects.
     // This should be called at the end of each test.
     public static void CleanUp () {
-        GameObject[] gos = UnityEngine.Object.FindObjectsOfType<GameObject>();
-        foreach (GameObject go in gos) {
-            UnityEngine.Object.Destroy(go);
-        }
+        DTUtility.CleanUpGameObjects();
     }
 
     private static IEnumerator CreateRingsAndMeasure<T> (bool hasHoles, float radius, int numEdges, int columns, int rows)

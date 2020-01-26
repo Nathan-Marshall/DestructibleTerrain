@@ -509,4 +509,13 @@ public static class DTUtility
 
         return new DTMesh(vertices, partitions);
     }
+    
+    // Destroys all GameObjects.
+    // This should be called at the end of tests.
+    public static void CleanUpGameObjects() {
+        GameObject[] gos = UnityEngine.Object.FindObjectsOfType<GameObject>();
+        foreach (GameObject go in gos) {
+            UnityEngine.Object.Destroy(go);
+        }
+    }
 }
