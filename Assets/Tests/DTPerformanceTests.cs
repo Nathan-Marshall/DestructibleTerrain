@@ -28,7 +28,7 @@ using DO_CHM_CHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectCusto
 using DO_Poly_PPHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolyPartitionHMCollider_PolyPartitionEarClippingTriangulator;
 using DO_PPHM_PPHM_PPEC = DestructibleTerrain.Destructible.DestructibleObjectPolyPartitionHMClippingPolyPartitionHMCollider_PolyPartitionEarClippingTriangulator;
 
-public static class DTPerfromanceTests
+public static class DTPerformanceTests
 {
     private static readonly IExplosionExecutor IterEE = IterativeExplosionExecutor.Instance;
     private static readonly IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
@@ -253,6 +253,9 @@ public static class DTPerfromanceTests
         }
         yield return null;
 
+        // Wait to observe whether the result is correct
+        WaitFrames(250);
+
         CleanUp();
     }
 
@@ -271,6 +274,12 @@ public static class DTPerfromanceTests
                     Profiler.GetTotalAllocatedMemoryLong() / 1048576f);
                 yield return new WaitForFixedUpdate();
             }
+        }
+    }
+
+    private static IEnumerator WaitFrames(int numFrames) {
+        for (int updates = 0; updates < numFrames; ++updates) {
+            yield return new WaitForFixedUpdate();
         }
     }
 
