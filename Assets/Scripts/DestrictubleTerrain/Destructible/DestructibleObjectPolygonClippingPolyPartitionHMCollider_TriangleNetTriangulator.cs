@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
+    // DestructibleObject with polygon clipping, PolyPartition Hertel-Mehlhorn partitioned collider, Triangle.Net triangulator
     public class DestructibleObjectPolygonClippingPolyPartitionHMCollider_TriangleNetTriangulator : DestructibleObjectPolygonClippingPolyPartitionHMCollider
     {
         protected override ITriangulator GetTriangulator() {

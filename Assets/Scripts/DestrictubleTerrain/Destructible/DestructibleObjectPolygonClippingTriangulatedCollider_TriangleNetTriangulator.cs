@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
+    // DestructibleObject with polygon clipping, triangulated collider, Triangle.Net triangulator
     public class DestructibleObjectPolygonClippingTriangulatedCollider_TriangleNetTriangulator : DestructibleObjectPolygonClippingTriangulatedCollider
     {
         protected override ITriangulator GetTriangulator() {

@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
+    // DestructibleObject with custom Hertel-Mehlhorn partitioned clipping, custom Hertel-Mehlhorn partitioned collider, Triangle.Net triangulator
     public class DestructibleObjectCustomHMClippingCustomHMCollider_TriangleNetTriangulator : DestructibleObjectCustomHMClippingCustomHMCollider
     {
         protected override ITriangulator GetTriangulator() {
