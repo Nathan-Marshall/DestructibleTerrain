@@ -10,7 +10,8 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    public abstract class DestructibleObjectPolygonClippingPolygonCollider : DestructibleObject
+    // DestructibleObject with polygon clipping, polygon collider
+    public class DestructibleObjectPolygonClippingPolygonCollider : DestructibleObject
     {
         private DTPolygon dtPolygon;
 

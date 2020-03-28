@@ -10,7 +10,8 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    public abstract class DestructibleObjectCustomHMClippingCustomHMCollider : DestructibleObject
+    // DestructibleObject with custom Hertel-Mehlhorn partitioned clipping, custom Hertel-Mehlhorn partitioned collider
+    public class DestructibleObjectCustomHMClippingCustomHMCollider : DestructibleObject
     {
         private DTMesh hmMesh;
 

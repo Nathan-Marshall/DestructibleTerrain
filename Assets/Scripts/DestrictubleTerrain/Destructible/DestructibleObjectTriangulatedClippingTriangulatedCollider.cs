@@ -10,7 +10,8 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    public abstract class DestructibleObjectTriangulatedClippingTriangulatedCollider : DestructibleObject
+    // DestructibleObject with triangulated clipping, triangulated collider, Triangle.Net triangulator
+    public class DestructibleObjectTriangulatedClippingTriangulatedCollider : DestructibleObject
     {
         private DTConvexPolygroup dtPolygroup;
 

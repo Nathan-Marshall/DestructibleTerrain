@@ -10,7 +10,8 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    public abstract class DestructibleObjectPolygonClippingPolyPartitionHMCollider : DestructibleObject
+    // DestructibleObject with polygon clipping, PolyPartition Hertel-Mehlhorn partitioned collider
+    public class DestructibleObjectPolygonClippingPolyPartitionHMCollider : DestructibleObject
     {
         private DTPolygon dtPolygon;
 

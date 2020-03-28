@@ -127,6 +127,8 @@ namespace DestructibleTerrain.Destructible
             };
         }
 
-        protected abstract ITriangulator GetTriangulator();
+        protected ITriangulator GetTriangulator() {
+            return TriangleNetTriangulator.Instance;
+        }
     }
 }
