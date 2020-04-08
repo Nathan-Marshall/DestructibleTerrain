@@ -20,11 +20,14 @@ namespace DestructibleTerrain.Destructible
                 return null;
             }
 
-            return new List<DTPolygon>() {
+            DTProfileMarkers.Transformation.Begin();
+            List<DTPolygon> polygonList = new List<DTPolygon>() {
                 new DTPolygon(
                     dtPolygon.Contour.Select(TransformPoint).ToList(),
                     dtPolygon.Holes.Select(hole => hole.Select(TransformPoint).ToList()).ToList())
             };
+            DTProfileMarkers.Transformation.End();
+            return polygonList;
         }
 
         public override void ApplyPolygonList(List<DTPolygon> dtPolygonList) {
@@ -49,11 +52,13 @@ namespace DestructibleTerrain.Destructible
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
+            DTProfileMarkers.Transformation.Begin();
             List<DTPolygon> dtPolygonList = new List<DTPolygon>() {
                 new DTPolygon(
                     transformedPolygonList[0].Contour.Select(InverseTransformPoint).ToList(),
                     transformedPolygonList[0].Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList())
             };
+            DTProfileMarkers.Transformation.End();
 
             ApplyPolygonList(dtPolygonList);
         }

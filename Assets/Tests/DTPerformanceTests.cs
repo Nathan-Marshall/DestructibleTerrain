@@ -51,6 +51,7 @@ public static class DTPerformanceTests
             new SampleGroupDefinition(ProcessExplosionsStr),
             
             // DestructibleTerrain ProfilerMarkers
+            new SampleGroupDefinition(DTProfileMarkers.TransformationStr),
             new SampleGroupDefinition(DTProfileMarkers.TriangulationStr),
             new SampleGroupDefinition(DTProfileMarkers.HertelMehlhornStr),
             

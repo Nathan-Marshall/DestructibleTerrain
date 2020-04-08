@@ -20,8 +20,12 @@ namespace DestructibleTerrain.Destructible
                 return null;
             }
 
+            DTProfileMarkers.Transformation.Begin();
             // Assume no holes in polygon list
-            return dtPolygroup.Select(poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
+            List<DTPolygon> polygonList = dtPolygroup.Select(
+                poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
+            DTProfileMarkers.Transformation.End();
+            return polygonList;
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
@@ -38,10 +42,11 @@ namespace DestructibleTerrain.Destructible
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
+            DTProfileMarkers.Transformation.Begin();
             var newPolyList = transformedPolygonList.Select(poly => new DTPolygon(
                 poly.Contour.Select(InverseTransformPoint).ToList(),
-                poly.Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList()
-                )).ToList();
+                poly.Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList())).ToList();
+            DTProfileMarkers.Transformation.End();
 
             ApplyPolygonList(newPolyList);
         }

@@ -20,9 +20,13 @@ namespace DestructibleTerrain.Destructible
                 return null;
             }
 
+
+            DTProfileMarkers.Transformation.Begin();
             // Assume no holes in polygon list
-            return hmMesh.Partitions.Select(
+            List<DTPolygon> polygonList = hmMesh.Partitions.Select(
                 poly => new DTPolygon(poly.Select(i => TransformPoint(hmMesh.Vertices[i])).ToList())).ToList();
+            DTProfileMarkers.Transformation.End();
+            return polygonList;
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
@@ -44,9 +48,11 @@ namespace DestructibleTerrain.Destructible
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
-            // Assume no holes in polygon list
+            DTProfileMarkers.Transformation.Begin();
             var newPolyList = transformedPolygonList.Select(poly => new DTPolygon(
-                poly.Contour.Select(InverseTransformPoint).ToList())).ToList();
+                poly.Contour.Select(InverseTransformPoint).ToList(),
+                poly.Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList())).ToList();
+            DTProfileMarkers.Transformation.End();
 
             ApplyPolygonList(newPolyList);
         }
