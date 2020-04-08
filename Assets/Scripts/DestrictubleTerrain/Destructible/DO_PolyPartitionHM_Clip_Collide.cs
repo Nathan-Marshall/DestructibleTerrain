@@ -10,37 +10,37 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    // DestructibleObject with custom Hertel-Mehlhorn partitioned clipping, custom Hertel-Mehlhorn partitioned collider
-    public class DestructibleObjectCustomHMClippingCustomHMCollider : DestructibleObject
+    // DestructibleObject with PolyPartition Hertel-Mehlhorn partitioned clipping, PolyPartition Hertel-Mehlhorn partitioned collider
+    public class DO_PolyPartitionHM_Clip_Collide : DestructibleObject
     {
-        private DTMesh hmMesh;
+        private DTConvexPolygroup hmPolygroup;
 
         public override List<DTPolygon> GetTransformedPolygonList() {
-            if (hmMesh == null) {
+            if (hmPolygroup == null) {
                 return null;
             }
 
             // Assume no holes in polygon list
-            return hmMesh.Partitions.Select(
-                poly => new DTPolygon(poly.Select(i => TransformPoint(hmMesh.Vertices[i])).ToList())).ToList();
+            return hmPolygroup.Select(poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
             DTProfileMarkers.Triangulation.Begin();
-            DTMesh triangulatedMesh = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator()).ToMesh();
+            DTConvexPolygroup triangulatedPolygroup = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
+            DTMesh dtMesh = triangulatedPolygroup.ToMesh();
             DTProfileMarkers.Triangulation.End();
 
             // Collider from polygon
             DTProfileMarkers.HertelMehlhorn.Begin();
-            hmMesh = HertelMehlhorn.CustomHM.Instance.ExecuteToMesh(triangulatedMesh);
+            hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(triangulatedPolygroup);
             DTProfileMarkers.HertelMehlhorn.End();
 
             // Collider from polygon
-            ApplyCollider(hmMesh);
+            ApplyCollider(hmPolygroup);
 
             // Create mesh from triangulated polygon
-            ApplyRenderMesh(triangulatedMesh);
+            ApplyRenderMesh(dtMesh);
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {

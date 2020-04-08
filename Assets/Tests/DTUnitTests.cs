@@ -13,17 +13,11 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.TestTools;
 
-using DO_Poly_Poly_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolygonCollider;
-using DO_Poly_Tri_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingTriangulatedCollider;
-using DO_Tri_Tri_TNet = DestructibleTerrain.Destructible.DestructibleObjectTriangulatedClippingTriangulatedCollider;
-using DO_Poly_CHM_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingCustomHMCollider;
-using DO_Poly_PPHM_TNet = DestructibleTerrain.Destructible.DestructibleObjectPolygonClippingPolyPartitionHMCollider;
+using DO_Tri_Tri = DestructibleTerrain.Destructible.DO_Triangle_Clip_Collide;
 
 public static class DTUnitTests
 {
     private static readonly IExplosionExecutor IterEE = IterativeExplosionExecutor.Instance;
-    private static readonly IExplosionExecutor BulkEE = BulkExplosionExecutor.Instance;
-    private static readonly IExplosionExecutor TrueEE = TrueBulkExplosionExecutor.Instance;
 
     private static readonly IPolygonSubtractor ClipperSub = ClipperSubtractor.Instance;
     private static readonly IPolygonSubtractor ORourkeSub = ORourkeSubtractor.Instance;
@@ -464,7 +458,7 @@ public static class DTUnitTests
             VerifyPolygroups(sub.SubtractPolygroup(subjectPolygroup, clipPolygroup), expectedPolygroups, expectedPolygroupsJoinedFirst);
         }
 
-        public static void DO_Subtraction(IPolygonSubtractor sub, DO_Tri_Tri_TNet dtObject, float x, float y) {
+        public static void DO_Subtraction(IPolygonSubtractor sub, DO_Tri_Tri dtObject, float x, float y) {
             DTPolygon box = new DTPolygon(square.Contour, L(smallSquare.Contour));
             
             dtObject.transform.position = new Vector3(x, y, 0);
@@ -477,8 +471,8 @@ public static class DTUnitTests
 
         //[Test]
         public static void DO_Subtraction() {
-            var clipperGO = new GameObject().AddComponent<DO_Tri_Tri_TNet>();
-            var orourkeGO = new GameObject().AddComponent<DO_Tri_Tri_TNet>();
+            var clipperGO = new GameObject().AddComponent<DO_Tri_Tri>();
+            var orourkeGO = new GameObject().AddComponent<DO_Tri_Tri>();
 
             Subtractors.DO_Subtraction(ClipperSub, clipperGO, -2, 0);
             Subtractors.DO_Subtraction(ORourkeSub, orourkeGO, 2, 0);

@@ -10,8 +10,8 @@ using UnityEngine;
 
 namespace DestructibleTerrain.Destructible
 {
-    // DestructibleObject with polygon clipping, custom Hertel-Mehlhorn partitioned collider
-    public class DestructibleObjectPolygonClippingCustomHMCollider : DestructibleObject
+    // DestructibleObject with polygon clipping, PolyPartition Hertel-Mehlhorn partitioned collider
+    public class DO_Polygon_Clip_PolyPartitionHM_Collide : DestructibleObject
     {
         private DTPolygon dtPolygon;
 
@@ -39,10 +39,10 @@ namespace DestructibleTerrain.Destructible
 
             // Collider from polygon
             DTProfileMarkers.HertelMehlhorn.Begin();
-            DTMesh hmMesh = HertelMehlhorn.CustomHM.Instance.ExecuteToMesh(dtMesh);
+            DTConvexPolygroup hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(dtMesh);
             DTProfileMarkers.HertelMehlhorn.End();
 
-            ApplyCollider(hmMesh);
+            ApplyCollider(hmPolygroup);
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);
