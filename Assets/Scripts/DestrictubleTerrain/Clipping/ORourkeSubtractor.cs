@@ -216,6 +216,8 @@ namespace DestructibleTerrain.Clipping
             foreach (DTPolygon clippingPoly in clippingPolygons) {
                 List<DTPolygon> newWorkingPolygons = new List<DTPolygon>();
                 foreach (DTPolygon workingPoly in workingPolygons) {
+                    // The working polygons should have partitioning applied since they may not be convex, but
+                    // we won't worry about that for now, since our explosions only have one polygon
                     newWorkingPolygons.AddRange(Subtract(workingPoly, clippingPoly));
                 }
                 workingPolygons = newWorkingPolygons;
@@ -296,7 +298,7 @@ namespace DestructibleTerrain.Clipping
         }
     }
 
-    static class ExtensionsForYangSubtractor
+    static class ExtensionsForORourkeSubtractor
     {
         public static Vector2 V(this DTPolygon poly, int i) {
             return poly.Contour.GetCircular(i);

@@ -37,7 +37,9 @@ namespace DestructibleTerrain.Destructible
             dtPolygon = dtPolygonList[0];
 
             // Collider from polygon
+            DTProfileMarkers.ApplyCollider.Begin();
             ApplyCollider(dtPolygon);
+            DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
             DTProfileMarkers.Triangulation.Begin();

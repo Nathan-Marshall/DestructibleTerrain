@@ -51,12 +51,19 @@ public static class DTPerformanceTests
             new SampleGroupDefinition(ProcessExplosionsStr),
             
             // DestructibleTerrain ProfilerMarkers
+            new SampleGroupDefinition(DTProfileMarkers.ApplyColliderStr),
+            new SampleGroupDefinition(DTProfileMarkers.HertelMehlhornStr),
+            new SampleGroupDefinition(DTProfileMarkers.IdentifyHolesStr),
+            new SampleGroupDefinition(DTProfileMarkers.MeshToPolygroupStr),
+            new SampleGroupDefinition(DTProfileMarkers.PolygroupToMeshStr),
+            new SampleGroupDefinition(DTProfileMarkers.SimplifyPolygonStr),
+            new SampleGroupDefinition(DTProfileMarkers.SubtractPolygroupStr),
             new SampleGroupDefinition(DTProfileMarkers.TransformationStr),
             new SampleGroupDefinition(DTProfileMarkers.TriangulationStr),
-            new SampleGroupDefinition(DTProfileMarkers.HertelMehlhornStr),
-            
-            // Unity ProfilerMarkers
-            new SampleGroupDefinition(PhysicsStr),
+            new SampleGroupDefinition(DTProfileMarkers.TriangleNetStr),
+
+        // Unity ProfilerMarkers
+        new SampleGroupDefinition(PhysicsStr),
         };
     }
 
@@ -89,7 +96,7 @@ public static class DTPerformanceTests
 
     public static T CreateRingObject<T> (bool hasHole = true, float radius = 1.0f,
             int numEdges = 24) where T : DestructibleObject {
-        float variationAmplitude = 0.1f * radius;
+        float variationAmplitude = 0.0f * radius;
         float angleStep = 2 * Mathf.PI / numEdges;
 
         List<Vector2> exterior = new List<Vector2>();
@@ -130,7 +137,7 @@ public static class DTPerformanceTests
         DTUtility.CleanUpGameObjects();
     }
 
-    private static IEnumerator CreateRingsAndMeasure<T> (bool hasHoles, float radius, int numEdges, int columns, int rows)
+    private static void CreateRingsAndMeasure<T> (bool hasHoles, bool isStatic, float radius, int numEdges, int columns, int rows)
             where T : DestructibleObject {
         using (Measure.ProfilerMarkers(ProfilerMarkers.SampleGroupDefinitions)) {
             ProfilerMarkers.Creation.Begin();
@@ -140,13 +147,16 @@ public static class DTPerformanceTests
             for (int c = 0; c < columns; ++c) {
                 for (int r = 0; r < rows; ++r) {
                     Vector2 pos = new Vector2(c * spacing - totalWidth * 0.5f, (r + 0.5f) * spacing);
-                    CreateRingObject<T>(hasHoles, radius, numEdges).transform.position = pos;
+                    T ring = CreateRingObject<T>(hasHoles, radius, numEdges);
+                    if (isStatic) {
+                        ring.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
+                    }
+                    ring.transform.position = pos;
                 }
             }
 
             ProfilerMarkers.Creation.End();
         }
-        yield return null;
     }
 
     public static IEnumerator PhysicsTest<T> (bool hasHoles, float radius, int numEdges, int columns, int rows, int warmupFrames, int captureFrames)
@@ -158,7 +168,8 @@ public static class DTPerformanceTests
         CreateFloor(1000);
 
         // Meaure the time to create all destructible objects
-        yield return CreateRingsAndMeasure<T>(hasHoles, radius, numEdges, columns, rows);
+        CreateRingsAndMeasure<T>(hasHoles, false, radius, numEdges, columns, rows);
+        yield return null;
 
         // Allow objects to collide before we measure physics
         yield return WarmupFrames(warmupFrames);
@@ -176,16 +187,16 @@ public static class DTPerformanceTests
         UnityEngine.Random.InitState(12345);
 
         new GameObject("Main Camera").AddComponent<Camera>().transform.position = new Vector3(0, 50, -100);
-        CreateFloor(1000);
 
         // Meaure the time to create all destructible objects
-        yield return CreateRingsAndMeasure<T>(hasHoles, radius, numEdges, columns, rows);
+        CreateRingsAndMeasure<T>(hasHoles, true, radius, numEdges, columns, rows);
 
         // Set all objects to static
         var dObjs = DestructibleObject.FindAll();
         foreach (var dObj in dObjs) {
             dObj.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
         }
+        yield return null;
 
         float explosionTimer = 0;
         // To be called every fixed update;
@@ -222,16 +233,10 @@ public static class DTPerformanceTests
         UnityEngine.Random.InitState(12345);
 
         new GameObject("Main Camera").AddComponent<Camera>().transform.position = new Vector3(0, 50, -100);
-        CreateFloor(1000);
 
         // Meaure the time to create all destructible objects
-        yield return CreateRingsAndMeasure<T>(hasHoles, radius, numEdges, columns, rows);
-
-        // Set all objects to static
-        var dObjs = DestructibleObject.FindAll();
-        foreach (var dObj in dObjs) {
-            dObj.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
-        }
+        CreateRingsAndMeasure<T>(hasHoles, true, radius, numEdges, columns, rows);
+        yield return null;
 
         List<Explosion> explosions = new List<Explosion>();
         for (int i = 0; i < numExplosions; ++i) {
@@ -247,7 +252,43 @@ public static class DTPerformanceTests
         yield return null;
 
         // Wait to observe whether the result is correct
-        WaitFrames(250);
+        yield return WaitFrames(60);
+
+        CleanUp();
+    }
+
+    public static IEnumerator SimpleTest<T>(IExplosionExecutor ee, IPolygonSubtractor sub) where T : DestructibleObject {
+        // Set a constant seed so that we get the same results every time
+        UnityEngine.Random.InitState(12345);
+
+        new GameObject("Main Camera").AddComponent<Camera>().transform.position = new Vector3(0, 50, -100);
+
+        // Meaure the time to create all destructible objects
+        T ring;
+        using (Measure.ProfilerMarkers(ProfilerMarkers.SampleGroupDefinitions)) {
+            ProfilerMarkers.Creation.Begin();
+            ring = CreateRingObject<T>(true, 1, 4);
+            ProfilerMarkers.Creation.End();
+
+            ring.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
+        }
+        yield return null;
+        ring.transform.position = new Vector2(0, 0);
+
+        List<Explosion> explosions = new List<Explosion>() {
+            new Explosion(-2, 0, 2, 4),
+            new Explosion(2, 0, 2, 4),
+        };
+
+        using (Measure.ProfilerMarkers(ProfilerMarkers.SampleGroupDefinitions)) {
+            ProfilerMarkers.ProcessExplosions.Begin();
+            ee.ExecuteExplosions(explosions, DestructibleObject.FindAll(), sub);
+            ProfilerMarkers.ProcessExplosions.End();
+        }
+        yield return null;
+
+        // Wait to observe whether the result is correct
+        yield return WaitFrames(60);
 
         CleanUp();
     }
@@ -286,9 +327,19 @@ public static class DTPerformanceTests
         yield return PhysicsTest<T>(true, 1.0f, 24, 40, 10, 100, 200);
     }
 
+    public static IEnumerator ContinuousExplosionTestManySolids<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
+            where T : DestructibleObject {
+        yield return ContinuousExplosionTest<T>(ee, sub, 1, 1, Time.fixedDeltaTime, false, 1.0f, 24, 10, 10, 100, 200);
+    }
+
     public static IEnumerator ContinuousExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
             where T : DestructibleObject {
         yield return ContinuousExplosionTest<T>(ee, sub, 1, 1, Time.fixedDeltaTime, true, 1.0f, 24, 10, 10, 100, 200);
+    }
+
+    public static IEnumerator OneTimeExplosionTestManySolids<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
+            where T : DestructibleObject {
+        yield return OneTimeExplosionTest<T>(ee, sub, 100, 1, false, 1.0f, 24, 10, 10);
     }
 
     public static IEnumerator OneTimeExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
@@ -319,7 +370,41 @@ public static class DTPerformanceTests
         [UnityTest, Performance] public static IEnumerator PPHM() { yield return CollisionTestRings400<DO_Poly_PPHM>(); }
     }
 
-    public static class ExplosionPerFrameTests
+    public static class Simple
+    {
+        [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return SimpleTest<DO_Poly_Poly>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Poly_Tri_Clipper() { yield return SimpleTest<DO_Poly_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_CHM_Clipper() { yield return SimpleTest<DO_Poly_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_PPHM_Clipper() { yield return SimpleTest<DO_Poly_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_Clipper() { yield return SimpleTest<DO_Tri_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_Clipper() { yield return SimpleTest<DO_CHM_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_Clipper() { yield return SimpleTest<DO_PPHM_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return SimpleTest<DO_Tri_Tri>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return SimpleTest<DO_CHM_CHM>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return SimpleTest<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+    }
+
+    public static class SequentialSolids
+    {
+        [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return ContinuousExplosionTestManySolids<DO_Poly_Poly>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Poly_Tri_Clipper() { yield return ContinuousExplosionTestManySolids<DO_Poly_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_CHM_Clipper() { yield return ContinuousExplosionTestManySolids<DO_Poly_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_PPHM_Clipper() { yield return ContinuousExplosionTestManySolids<DO_Poly_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_Clipper() { yield return ContinuousExplosionTestManySolids<DO_Tri_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_Clipper() { yield return ContinuousExplosionTestManySolids<DO_CHM_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_Clipper() { yield return ContinuousExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return ContinuousExplosionTestManySolids<DO_Tri_Tri>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return ContinuousExplosionTestManySolids<DO_CHM_CHM>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return ContinuousExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+    }
+
+    public static class SequentialRings
     {
         [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return ContinuousExplosionTestManyRings<DO_Poly_Poly> (IterEE, ClipperSub); }
 
@@ -336,7 +421,24 @@ public static class DTPerformanceTests
         [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
-    public static class OneTime100ExplosionTests
+    public static class SimultaneousSolids
+    {
+        [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return OneTimeExplosionTestManySolids<DO_Poly_Poly>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Poly_Tri_Clipper() { yield return OneTimeExplosionTestManySolids<DO_Poly_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_CHM_Clipper() { yield return OneTimeExplosionTestManySolids<DO_Poly_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_PPHM_Clipper() { yield return OneTimeExplosionTestManySolids<DO_Poly_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_Clipper() { yield return OneTimeExplosionTestManySolids<DO_Tri_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_Clipper() { yield return OneTimeExplosionTestManySolids<DO_CHM_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_Clipper() { yield return OneTimeExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return OneTimeExplosionTestManySolids<DO_Tri_Tri>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return OneTimeExplosionTestManySolids<DO_CHM_CHM>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+    }
+
+    public static class SimultaneousRings
     {
         [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return OneTimeExplosionTestManyRings<DO_Poly_Poly>(IterEE, ClipperSub); }
 
@@ -353,7 +455,7 @@ public static class DTPerformanceTests
         [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
-    public static class OneTimeLargeObjectExplosionTests
+    public static class SimulatneousLargeRings
     {
         [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly>(IterEE, ClipperSub); }
 

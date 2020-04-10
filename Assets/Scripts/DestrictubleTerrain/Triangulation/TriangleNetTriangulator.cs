@@ -14,6 +14,8 @@ namespace DestructibleTerrain.Triangulation
     public class TriangleNetTriangulator : ITriangulator {
         private static readonly Lazy<TriangleNetTriangulator> lazyInstance = new Lazy<TriangleNetTriangulator>(() => new TriangleNetTriangulator());
 
+        public int callCount = 0;
+
         // Singleton intance
         public static TriangleNetTriangulator Instance {
             get { return lazyInstance.Value; }
@@ -22,10 +24,14 @@ namespace DestructibleTerrain.Triangulation
         private TriangleNetTriangulator() { }
 
         public DTMesh PolygonToMesh(DTPolygon subject) {
-            // Mark any unmarked holes in the contour, because Triangle.NET doesn't handle them properly
+            // Mark any unmarked holes in the contour, otherwise Triangle.NET won't handle them properly
             subject = DTUtility.IdentifyHoles(subject);
             if (subject.Contour.Count < 3) {
                 return new DTMesh();
+            }
+            // Don't triangulate if this is already a triangle
+            else if (subject.Contour.Count == 3 && subject.Holes.Count == 0) {
+                return new DTMesh(subject.Contour, new List<List<int>>() { new List<int>() { 0, 1, 2 } });
             }
 
             // Format polygon input and execute
@@ -39,7 +45,10 @@ namespace DestructibleTerrain.Triangulation
                     catch (Exception) { }
                 }
             }
+            DTProfileMarkers.TriangleNet.Begin();
             IMesh triangleNetOutput = polygon.Triangulate();
+            ++callCount;
+            DTProfileMarkers.TriangleNet.End();
 
             // Convert Triangle.NET output into DTMesh
             List<Vector2> vertices = triangleNetOutput.Vertices.ToVector2List();
@@ -48,10 +57,14 @@ namespace DestructibleTerrain.Triangulation
         }
 
         public DTConvexPolygroup PolygonToTriangleList(DTPolygon subject) {
-            // Mark any unmarked holes in the contour, because Triangle.NET doesn't handle them properly
+            // Mark any unmarked holes in the contour, otherwise Triangle.NET won't handle them properly
             subject = DTUtility.IdentifyHoles(subject);
             if (subject.Contour.Count < 3) {
                 return new DTConvexPolygroup();
+            }
+            // Don't triangulate if this is already a triangle
+            else if (subject.Contour.Count == 3 && subject.Holes.Count == 0) {
+                return new DTConvexPolygroup(new List<DTPolygon>() { subject });
             }
 
             // Format polygon input and execute
@@ -65,7 +78,10 @@ namespace DestructibleTerrain.Triangulation
                     catch (Exception) {}
                 }
             }
+            DTProfileMarkers.TriangleNet.Begin();
             IMesh triangleNetOutput = polygon.Triangulate();
+            ++callCount;
+            DTProfileMarkers.TriangleNet.End();
 
             // Convert Triangle.NET output into poly group
             return new DTConvexPolygroup(triangleNetOutput.Triangles.Select(t => t.ToVertexList()).ToList());

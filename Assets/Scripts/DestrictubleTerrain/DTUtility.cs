@@ -180,6 +180,8 @@ public static class DTUtility
     }
 
     public static DTPolygon IdentifyHoles(this DTPolygon inPoly) {
+        DTProfileMarkers.IdentifyHoles.Begin();
+
         List<Vector2> workingContour = new List<Vector2>(inPoly.Contour);
         List<List<Vector2>> loops = new List<List<Vector2>>();
 
@@ -212,6 +214,7 @@ public static class DTUtility
                 if (vertices.Count == workingContour.Count) {
                     if (loops.Count == 0) {
                         // If there were no other loops, then the contour does not contain unidentified holes
+                        DTProfileMarkers.IdentifyHoles.End();
                         return inPoly;
                     }
 
@@ -258,6 +261,7 @@ public static class DTUtility
             }
         }
 
+        DTProfileMarkers.IdentifyHoles.End();
         return outPoly;
     }
 
@@ -299,7 +303,7 @@ public static class DTUtility
 
     // Checks points in the inner contour to see if they are on the interior of the outer contour.
     // Only checks until it finds a point that is not exactly on the boundary.
-    // This is not thorough and assumes that edges do otherwise intersect except when the vertex from one
+    // This is not thorough and assumes that edges do not otherwise intersect except when the vertex from one
     // contour lies on the boundary of the other.
     // Returns true if inner is within outer, false otherwise.
     public static bool QuickPolyInPoly(List<Vector2> inner, List<Vector2> outer) {
@@ -314,10 +318,12 @@ public static class DTUtility
 
     public static List<Vector2> JoinContours(List<Vector2> a, List<Vector2> b) {
         if (a.Count == 0) {
-            return new List<Vector2>(b);
+            var output = new List<Vector2>(b);
+            return output;
         }
         if (b.Count == 0) {
-            return new List<Vector2>(a);
+            var output = new List<Vector2>(a);
+            return output;
         }
         
         // Add all of a's vertices to a map
@@ -355,11 +361,15 @@ public static class DTUtility
 
     // Removes unnecessary vertices
     public static DTPolygon Simplify(this DTPolygon inPoly) {
+        DTProfileMarkers.SimplifyPolygon.Begin();
+
         if (inPoly.Contour.Count == 0) {
+            DTProfileMarkers.SimplifyPolygon.End();
             return null;
         }
         var simplifiedContour = SimplifyContour(inPoly.Contour);
         if (simplifiedContour == null) {
+            DTProfileMarkers.SimplifyPolygon.End();
             return null;
         }
 
@@ -371,7 +381,9 @@ public static class DTUtility
             }
         }
 
-        return new DTPolygon(simplifiedContour, simplifiedHoles);
+        DTPolygon simplifiedPolygon = new DTPolygon(simplifiedContour, simplifiedHoles);
+        DTProfileMarkers.SimplifyPolygon.End();
+        return simplifiedPolygon;
     }
 
     public static float Dot(this Vector2 a, Vector2 b) {
@@ -475,15 +487,24 @@ public static class DTUtility
     }
 
     public static DTConvexPolygroup TriangulateAll(List<DTPolygon> polygonList, ITriangulator triangulator) {
-        return new DTConvexPolygroup(polygonList.SelectMany(
-            poly => triangulator.PolygonToTriangleList(poly)).ToList());
+        var triangleList = new List<List<Vector2>>(); 
+        foreach (var poly in polygonList) {
+            triangleList.AddRange(triangulator.PolygonToTriangleList(poly));
+        }
+        return new DTConvexPolygroup(triangleList);
     }
 
     public static DTConvexPolygroup ToPolygroup(this DTMesh mesh) {
-        return new DTConvexPolygroup(mesh.Partitions.Select(part => part.Select(i => mesh.Vertices[i]).ToList()).ToList());
+        DTProfileMarkers.MeshToPolygroup.Begin();
+        DTConvexPolygroup polygroup = new DTConvexPolygroup(
+            mesh.Partitions.Select(part => part.Select(i => mesh.Vertices[i]).ToList()).ToList());
+        DTProfileMarkers.MeshToPolygroup.End();
+        return polygroup;
     }
     
     public static DTMesh ToMesh(this DTConvexPolygroup polygroup) {
+        DTProfileMarkers.PolygroupToMesh.Begin();
+
         Dictionary<Vector2, int> vertexMap = new Dictionary<Vector2, int>(new ApproximateVector2Comparer());
         List<Vector2> vertices = new List<Vector2>();
         foreach (var poly in polygroup) {
@@ -507,7 +528,9 @@ public static class DTUtility
             partitions.Add(indices);
         }
 
-        return new DTMesh(vertices, partitions);
+        DTMesh mesh = new DTMesh(vertices, partitions);
+        DTProfileMarkers.PolygroupToMesh.End();
+        return mesh;
     }
     
     // Destroys all GameObjects.

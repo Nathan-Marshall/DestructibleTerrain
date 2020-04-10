@@ -20,7 +20,6 @@ namespace DestructibleTerrain.Destructible
                 return null;
             }
 
-
             DTProfileMarkers.Transformation.Begin();
             // Assume no holes in polygon list
             List<DTPolygon> polygonList = hmMesh.Partitions.Select(
@@ -41,7 +40,9 @@ namespace DestructibleTerrain.Destructible
             DTProfileMarkers.HertelMehlhorn.End();
 
             // Collider from polygon
+            DTProfileMarkers.ApplyCollider.Begin();
             ApplyCollider(hmMesh);
+            DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(triangulatedMesh);

@@ -45,7 +45,9 @@ namespace DestructibleTerrain.Destructible
             DTConvexPolygroup hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(dtMesh);
             DTProfileMarkers.HertelMehlhorn.End();
 
+            DTProfileMarkers.ApplyCollider.Begin();
             ApplyCollider(hmPolygroup);
+            DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);

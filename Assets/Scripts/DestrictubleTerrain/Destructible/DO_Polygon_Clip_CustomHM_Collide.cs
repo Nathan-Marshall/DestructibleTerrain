@@ -45,7 +45,9 @@ namespace DestructibleTerrain.Destructible
             DTMesh hmMesh = HertelMehlhorn.CustomHM.Instance.ExecuteToMesh(dtMesh);
             DTProfileMarkers.HertelMehlhorn.End();
 
+            DTProfileMarkers.ApplyCollider.Begin();
             ApplyCollider(hmMesh);
+            DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);

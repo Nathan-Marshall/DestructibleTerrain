@@ -1,6 +1,7 @@
 ﻿using DestructibleTerrain;
 using DestructibleTerrain.Clipping;
 using DestructibleTerrain.Destructible;
+using DestructibleTerrain.Triangulation;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,6 +25,8 @@ namespace DestructibleTerrain.ExplosionExecution
         private IterativeExplosionExecutor() { }
 
         public void ExecuteExplosions(IEnumerable<Explosion> explosions, IEnumerable<DestructibleObject> dtObjects, IPolygonSubtractor subtractor) {
+            TriangleNetTriangulator.Instance.callCount = 0;
+
             // Store destructible objects in a new list, since we may add or remove some during processing
             List<DestructibleObject> dtObjectList = dtObjects.ToList();
             // Add new destructible objects to this list instead of objectList until finished processing the current explosion
@@ -47,7 +50,10 @@ namespace DestructibleTerrain.ExplosionExecution
                     }
 
                     // Subtract explosion polygon from destructible object polygon group
-                    List<List<DTPolygon>> result = subtractor.SubtractPolygroup(dtObj.GetTransformedPolygonList(), new List<DTPolygon>() { exp.DTPolygon });
+                    DTProfileMarkers.SubtractPolygroup.Begin();
+                    List<DTPolygon> inputPolygroup = dtObj.GetTransformedPolygonList();
+                    List<List<DTPolygon>> result = subtractor.SubtractPolygroup(inputPolygroup, new List<DTPolygon>() { exp.DTPolygon });
+                    DTProfileMarkers.SubtractPolygroup.End();
 
                     int count = result.Count();
                     if (count == 0) {
@@ -81,6 +87,10 @@ namespace DestructibleTerrain.ExplosionExecution
                 dtObjectList.AddRange(pendingAdditions);
                 pendingAdditions.Clear();
             }
+
+            Debug.Log("# Objects:" + dtObjectList.Count);
+            Debug.Log("# Polygons:" + dtObjectList.Sum(obj => obj.GetTransformedPolygonList().Count));
+            Debug.Log("# Triangulation Calls:" + TriangleNetTriangulator.Instance.callCount);
         }
     }
 }

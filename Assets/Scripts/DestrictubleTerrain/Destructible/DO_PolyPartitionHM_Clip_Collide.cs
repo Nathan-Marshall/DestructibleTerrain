@@ -41,7 +41,9 @@ namespace DestructibleTerrain.Destructible
             DTProfileMarkers.HertelMehlhorn.End();
 
             // Collider from polygon
+            DTProfileMarkers.ApplyCollider.Begin();
             ApplyCollider(hmPolygroup);
+            DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(dtMesh);
