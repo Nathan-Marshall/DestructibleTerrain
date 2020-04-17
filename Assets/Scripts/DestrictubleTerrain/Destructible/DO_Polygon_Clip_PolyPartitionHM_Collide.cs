@@ -37,12 +37,14 @@ namespace DestructibleTerrain.Destructible
             dtPolygon = dtPolygonList[0];
 
             DTProfileMarkers.Triangulation.Begin();
-            DTMesh dtMesh = GetTriangulator().PolygonToMesh(dtPolygon);
+            DTMesh triMesh = GetTriangulator().PolygonToMesh(dtPolygon);
             DTProfileMarkers.Triangulation.End();
+
+            DTConvexPolygroup triPolygroup = triMesh.ToPolygroup();
 
             // Collider from polygon
             DTProfileMarkers.HertelMehlhorn.Begin();
-            DTConvexPolygroup hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(dtMesh);
+            DTConvexPolygroup hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(triPolygroup);
             DTProfileMarkers.HertelMehlhorn.End();
 
             DTProfileMarkers.ApplyCollider.Begin();
@@ -50,7 +52,7 @@ namespace DestructibleTerrain.Destructible
             DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
-            ApplyRenderMesh(dtMesh);
+            ApplyRenderMesh(triMesh);
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {

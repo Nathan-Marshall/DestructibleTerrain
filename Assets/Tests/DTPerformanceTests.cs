@@ -63,8 +63,8 @@ public static class DTPerformanceTests
             new SampleGroupDefinition(DTProfileMarkers.TriangulationStr),
             new SampleGroupDefinition(DTProfileMarkers.TriangleNetStr),
 
-        // Unity ProfilerMarkers
-        new SampleGroupDefinition(PhysicsStr),
+            // Unity ProfilerMarkers
+            new SampleGroupDefinition(PhysicsStr),
         };
     }
 

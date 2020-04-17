@@ -49,9 +49,10 @@ namespace DestructibleTerrain.ExplosionExecution
                         continue;
                     }
 
+                    List<DTPolygon> inputPolygroup = dtObj.GetTransformedPolygonList();
+
                     // Subtract explosion polygon from destructible object polygon group
                     DTProfileMarkers.SubtractPolygroup.Begin();
-                    List<DTPolygon> inputPolygroup = dtObj.GetTransformedPolygonList();
                     List<List<DTPolygon>> result = subtractor.SubtractPolygroup(inputPolygroup, new List<DTPolygon>() { exp.DTPolygon });
                     DTProfileMarkers.SubtractPolygroup.End();
 
