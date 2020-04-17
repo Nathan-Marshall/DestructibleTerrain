@@ -32,7 +32,6 @@ namespace DestructibleTerrain.Destructible
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
             DTProfileMarkers.Triangulation.Begin();
             DTConvexPolygroup triangulatedPolygroup = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
-            DTMesh dtMesh = triangulatedPolygroup.ToMesh();
             DTProfileMarkers.Triangulation.End();
 
             // Collider from polygon
@@ -46,7 +45,7 @@ namespace DestructibleTerrain.Destructible
             DTProfileMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
-            ApplyRenderMesh(dtMesh);
+            ApplyRenderMesh(triangulatedPolygroup.ToMesh());
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {

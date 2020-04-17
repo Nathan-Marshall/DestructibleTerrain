@@ -4,11 +4,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TriangleNet.Geometry;
 using UnityEngine;
 
 public static class Polygrouper
 {
     public static List<List<DTPolygon>> CreatePolygroups(this List<DTPolygon> polygons) {
+        if (polygons.Count == 1) {
+            return new List<List<DTPolygon>>() { polygons };
+        }
+
+        DTProfileMarkers.Polygrouper.Begin();
+
         // Construct a list of point sets to identify unique groups of connected output polygons
         List<HashSet<Vector2>> outputPointGroups = new List<HashSet<Vector2>>();
         foreach (var poly in polygons) {
@@ -33,6 +40,7 @@ public static class Polygrouper
             }
         }
 
+        DTProfileMarkers.Polygrouper.End();
         return polygroups;
     }
 

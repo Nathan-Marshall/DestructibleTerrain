@@ -19,6 +19,9 @@ public static class DTProfileMarkers
     public static readonly string PolygroupToMeshStr = Namespace + ".PolygroupToMesh";
     public static readonly ProfilerMarker PolygroupToMesh = new ProfilerMarker(PolygroupToMeshStr);
 
+    public static readonly string PolygrouperStr = Namespace + ".Polygrouper";
+    public static readonly ProfilerMarker Polygrouper = new ProfilerMarker(PolygrouperStr);
+
     public static readonly string SimplifyPolygonStr = Namespace + ".SimplifyPolygon";
     public static readonly ProfilerMarker SimplifyPolygon = new ProfilerMarker(SimplifyPolygonStr);
 

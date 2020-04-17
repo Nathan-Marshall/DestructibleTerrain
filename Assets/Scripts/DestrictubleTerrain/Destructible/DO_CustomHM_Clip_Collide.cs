@@ -31,8 +31,11 @@ namespace DestructibleTerrain.Destructible
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
             DTProfileMarkers.Triangulation.Begin();
-            DTMesh triangulatedMesh = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator()).ToMesh();
+            DTConvexPolygroup triangleList = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
             DTProfileMarkers.Triangulation.End();
+
+            // Our Hertel-Mehlhorn implementation takes a DTMesh, so convert before instead of after
+            DTMesh triangulatedMesh = triangleList.ToMesh();
 
             // Collider from polygon
             DTProfileMarkers.HertelMehlhorn.Begin();

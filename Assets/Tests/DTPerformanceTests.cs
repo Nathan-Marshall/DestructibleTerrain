@@ -56,6 +56,7 @@ public static class DTPerformanceTests
             new SampleGroupDefinition(DTProfileMarkers.IdentifyHolesStr),
             new SampleGroupDefinition(DTProfileMarkers.MeshToPolygroupStr),
             new SampleGroupDefinition(DTProfileMarkers.PolygroupToMeshStr),
+            new SampleGroupDefinition(DTProfileMarkers.PolygrouperStr),
             new SampleGroupDefinition(DTProfileMarkers.SimplifyPolygonStr),
             new SampleGroupDefinition(DTProfileMarkers.SubtractPolygroupStr),
             new SampleGroupDefinition(DTProfileMarkers.TransformationStr),
