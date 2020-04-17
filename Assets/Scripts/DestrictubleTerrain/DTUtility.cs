@@ -505,25 +505,27 @@ public static class DTUtility
     public static DTMesh ToMesh(this DTConvexPolygroup polygroup) {
         DTProfileMarkers.PolygroupToMesh.Begin();
 
-        Dictionary<Vector2, int> vertexMap = new Dictionary<Vector2, int>(new ApproximateVector2Comparer());
+        // List of unique vertices for the mesh
         List<Vector2> vertices = new List<Vector2>();
-        foreach (var poly in polygroup) {
-            // Assume no holes
-            foreach (var v in poly) {
-                try {
-                    // Add the vertex only if it has not already been added
-                    vertexMap.Add(v, vertices.Count);
-                    vertices.Add(v);
-                } catch (ArgumentException) { }
-            }
-        }
 
+        // Maps each vertex to its index in the vertices list
+        Dictionary<Vector2, int> vertexMap = new Dictionary<Vector2, int>(new ApproximateVector2Comparer());
+
+        // List of partitions, each of which is a list of vertex indices
         List<List<int>> partitions = new List<List<int>>(polygroup.Count);
+
         foreach (var poly in polygroup) {
+            // Indices of the vertices in this partition
             List<int> indices = new List<int>();
-            // Assume no holes
             foreach (var v in poly) {
-                indices.Add(vertexMap[v]);
+                // Get the mapped index of the vertex. If the vertex is not yet mapped, map it to the index at the end
+                // of the vertices list
+                if (!vertexMap.TryGetValue(v, out int index)) {
+                    index = vertices.Count;
+                    vertexMap.Add(v, index);
+                    vertices.Add(v);
+                }
+                indices.Add(index);
             }
             partitions.Add(indices);
         }
