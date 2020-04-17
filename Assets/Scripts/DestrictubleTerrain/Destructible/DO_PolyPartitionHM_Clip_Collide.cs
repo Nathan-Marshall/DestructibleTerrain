@@ -20,40 +20,40 @@ namespace DestructibleTerrain.Destructible
                 return null;
             }
 
-            DTProfileMarkers.Transformation.Begin();
+            DTProfilerMarkers.Transformation.Begin();
             // Assume no holes in polygon list
             List<DTPolygon> polygonList = hmPolygroup.Select(
                 poly => new DTPolygon(poly.Select(TransformPoint).ToList())).ToList();
-            DTProfileMarkers.Transformation.End();
+            DTProfilerMarkers.Transformation.End();
             return polygonList;
         }
 
         public override void ApplyPolygonList(List<DTPolygon> clippedPolygonList) {
             // The clipped polygons could potentially be concave or have holes, so we will triangulate each one before applying
-            DTProfileMarkers.Triangulation.Begin();
+            DTProfilerMarkers.Triangulation.Begin();
             DTConvexPolygroup triangulatedPolygroup = DTUtility.TriangulateAll(clippedPolygonList, GetTriangulator());
-            DTProfileMarkers.Triangulation.End();
+            DTProfilerMarkers.Triangulation.End();
 
             // Collider from polygon
-            DTProfileMarkers.HertelMehlhorn.Begin();
+            DTProfilerMarkers.HertelMehlhorn.Begin();
             hmPolygroup = HertelMehlhorn.PolyPartitionHM.Instance.ExecuteToPolygroup(triangulatedPolygroup);
-            DTProfileMarkers.HertelMehlhorn.End();
+            DTProfilerMarkers.HertelMehlhorn.End();
 
             // Collider from polygon
-            DTProfileMarkers.ApplyCollider.Begin();
+            DTProfilerMarkers.ApplyCollider.Begin();
             ApplyCollider(hmPolygroup);
-            DTProfileMarkers.ApplyCollider.End();
+            DTProfilerMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
             ApplyRenderMesh(triangulatedPolygroup.ToMesh());
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
-            DTProfileMarkers.Transformation.Begin();
+            DTProfilerMarkers.Transformation.Begin();
             var newPolyList = transformedPolygonList.Select(poly => new DTPolygon(
                 poly.Contour.Select(InverseTransformPoint).ToList(),
                 poly.Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList())).ToList();
-            DTProfileMarkers.Transformation.End();
+            DTProfilerMarkers.Transformation.End();
 
             ApplyPolygonList(newPolyList);
         }

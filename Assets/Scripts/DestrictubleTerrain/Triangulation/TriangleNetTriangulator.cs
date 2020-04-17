@@ -45,10 +45,10 @@ namespace DestructibleTerrain.Triangulation
                     catch (Exception) { }
                 }
             }
-            DTProfileMarkers.TriangleNet.Begin();
+            DTProfilerMarkers.TriangleNet.Begin();
             IMesh triangleNetOutput = polygon.Triangulate();
             ++callCount;
-            DTProfileMarkers.TriangleNet.End();
+            DTProfilerMarkers.TriangleNet.End();
 
             // Convert Triangle.NET output into DTMesh
             List<Vector2> vertices = triangleNetOutput.Vertices.ToVector2List();
@@ -78,10 +78,10 @@ namespace DestructibleTerrain.Triangulation
                     catch (Exception) {}
                 }
             }
-            DTProfileMarkers.TriangleNet.Begin();
+            DTProfilerMarkers.TriangleNet.Begin();
             IMesh triangleNetOutput = polygon.Triangulate();
             ++callCount;
-            DTProfileMarkers.TriangleNet.End();
+            DTProfilerMarkers.TriangleNet.End();
 
             // Convert Triangle.NET output into poly group
             return new DTConvexPolygroup(triangleNetOutput.Triangles.Select(t => t.ToVertexList()).ToList());

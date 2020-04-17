@@ -51,17 +51,17 @@ public static class DTPerformanceTests
             new SampleGroupDefinition(ProcessExplosionsStr),
             
             // DestructibleTerrain ProfilerMarkers
-            new SampleGroupDefinition(DTProfileMarkers.ApplyColliderStr),
-            new SampleGroupDefinition(DTProfileMarkers.HertelMehlhornStr),
-            new SampleGroupDefinition(DTProfileMarkers.IdentifyHolesStr),
-            new SampleGroupDefinition(DTProfileMarkers.MeshToPolygroupStr),
-            new SampleGroupDefinition(DTProfileMarkers.PolygroupToMeshStr),
-            new SampleGroupDefinition(DTProfileMarkers.PolygrouperStr),
-            new SampleGroupDefinition(DTProfileMarkers.SimplifyPolygonStr),
-            new SampleGroupDefinition(DTProfileMarkers.SubtractPolygroupStr),
-            new SampleGroupDefinition(DTProfileMarkers.TransformationStr),
-            new SampleGroupDefinition(DTProfileMarkers.TriangulationStr),
-            new SampleGroupDefinition(DTProfileMarkers.TriangleNetStr),
+            new SampleGroupDefinition(DTProfilerMarkers.ApplyColliderStr),
+            new SampleGroupDefinition(DTProfilerMarkers.HertelMehlhornStr),
+            new SampleGroupDefinition(DTProfilerMarkers.IdentifyHolesStr),
+            new SampleGroupDefinition(DTProfilerMarkers.MeshToPolygroupStr),
+            new SampleGroupDefinition(DTProfilerMarkers.PolygroupToMeshStr),
+            new SampleGroupDefinition(DTProfilerMarkers.PolygrouperStr),
+            new SampleGroupDefinition(DTProfilerMarkers.SimplifyPolygonStr),
+            new SampleGroupDefinition(DTProfilerMarkers.SubtractPolygroupStr),
+            new SampleGroupDefinition(DTProfilerMarkers.TransformationStr),
+            new SampleGroupDefinition(DTProfilerMarkers.TriangulationStr),
+            new SampleGroupDefinition(DTProfilerMarkers.TriangleNetStr),
 
             // Unity ProfilerMarkers
             new SampleGroupDefinition(PhysicsStr),

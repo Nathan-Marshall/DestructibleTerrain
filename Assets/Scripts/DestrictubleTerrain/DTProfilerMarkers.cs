@@ -1,6 +1,6 @@
 ﻿using Unity.Profiling;
 
-public static class DTProfileMarkers
+public static class DTProfilerMarkers
 {
     public static readonly string Namespace = "DestructibleTerrain";
 

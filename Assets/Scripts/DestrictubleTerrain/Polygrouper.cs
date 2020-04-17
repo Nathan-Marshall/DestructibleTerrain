@@ -14,7 +14,7 @@ public static class Polygrouper
             return new List<List<DTPolygon>>() { polygons };
         }
 
-        DTProfileMarkers.Polygrouper.Begin();
+        DTProfilerMarkers.Polygrouper.Begin();
 
         // Construct a list of point sets to identify unique groups of connected output polygons
         List<HashSet<Vector2>> outputPointGroups = new List<HashSet<Vector2>>();
@@ -40,7 +40,7 @@ public static class Polygrouper
             }
         }
 
-        DTProfileMarkers.Polygrouper.End();
+        DTProfilerMarkers.Polygrouper.End();
         return polygroups;
     }
 

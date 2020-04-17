@@ -180,7 +180,7 @@ public static class DTUtility
     }
 
     public static DTPolygon IdentifyHoles(this DTPolygon inPoly) {
-        DTProfileMarkers.IdentifyHoles.Begin();
+        DTProfilerMarkers.IdentifyHoles.Begin();
 
         List<Vector2> workingContour = new List<Vector2>(inPoly.Contour);
         List<List<Vector2>> loops = new List<List<Vector2>>();
@@ -214,7 +214,7 @@ public static class DTUtility
                 if (vertices.Count == workingContour.Count) {
                     if (loops.Count == 0) {
                         // If there were no other loops, then the contour does not contain unidentified holes
-                        DTProfileMarkers.IdentifyHoles.End();
+                        DTProfilerMarkers.IdentifyHoles.End();
                         return inPoly;
                     }
 
@@ -261,7 +261,7 @@ public static class DTUtility
             }
         }
 
-        DTProfileMarkers.IdentifyHoles.End();
+        DTProfilerMarkers.IdentifyHoles.End();
         return outPoly;
     }
 
@@ -361,15 +361,15 @@ public static class DTUtility
 
     // Removes unnecessary vertices
     public static DTPolygon Simplify(this DTPolygon inPoly) {
-        DTProfileMarkers.SimplifyPolygon.Begin();
+        DTProfilerMarkers.SimplifyPolygon.Begin();
 
         if (inPoly.Contour.Count == 0) {
-            DTProfileMarkers.SimplifyPolygon.End();
+            DTProfilerMarkers.SimplifyPolygon.End();
             return null;
         }
         var simplifiedContour = SimplifyContour(inPoly.Contour);
         if (simplifiedContour == null) {
-            DTProfileMarkers.SimplifyPolygon.End();
+            DTProfilerMarkers.SimplifyPolygon.End();
             return null;
         }
 
@@ -382,7 +382,7 @@ public static class DTUtility
         }
 
         DTPolygon simplifiedPolygon = new DTPolygon(simplifiedContour, simplifiedHoles);
-        DTProfileMarkers.SimplifyPolygon.End();
+        DTProfilerMarkers.SimplifyPolygon.End();
         return simplifiedPolygon;
     }
 
@@ -495,15 +495,15 @@ public static class DTUtility
     }
 
     public static DTConvexPolygroup ToPolygroup(this DTMesh mesh) {
-        DTProfileMarkers.MeshToPolygroup.Begin();
+        DTProfilerMarkers.MeshToPolygroup.Begin();
         DTConvexPolygroup polygroup = new DTConvexPolygroup(
             mesh.Partitions.Select(part => part.Select(i => mesh.Vertices[i]).ToList()).ToList());
-        DTProfileMarkers.MeshToPolygroup.End();
+        DTProfilerMarkers.MeshToPolygroup.End();
         return polygroup;
     }
     
     public static DTMesh ToMesh(this DTConvexPolygroup polygroup) {
-        DTProfileMarkers.PolygroupToMesh.Begin();
+        DTProfilerMarkers.PolygroupToMesh.Begin();
 
         // List of unique vertices for the mesh
         List<Vector2> vertices = new List<Vector2>();
@@ -531,7 +531,7 @@ public static class DTUtility
         }
 
         DTMesh mesh = new DTMesh(vertices, partitions);
-        DTProfileMarkers.PolygroupToMesh.End();
+        DTProfilerMarkers.PolygroupToMesh.End();
         return mesh;
     }
     

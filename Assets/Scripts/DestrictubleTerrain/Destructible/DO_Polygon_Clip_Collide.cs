@@ -20,13 +20,13 @@ namespace DestructibleTerrain.Destructible
                 return null;
             }
 
-            DTProfileMarkers.Transformation.Begin();
+            DTProfilerMarkers.Transformation.Begin();
             List<DTPolygon> polygonList = new List<DTPolygon>() {
                 new DTPolygon(
                     dtPolygon.Contour.Select(TransformPoint).ToList(),
                     dtPolygon.Holes.Select(hole => hole.Select(TransformPoint).ToList()).ToList())
             };
-            DTProfileMarkers.Transformation.End();
+            DTProfilerMarkers.Transformation.End();
             return polygonList;
         }
 
@@ -37,25 +37,25 @@ namespace DestructibleTerrain.Destructible
             dtPolygon = dtPolygonList[0];
 
             // Collider from polygon
-            DTProfileMarkers.ApplyCollider.Begin();
+            DTProfilerMarkers.ApplyCollider.Begin();
             ApplyCollider(dtPolygon);
-            DTProfileMarkers.ApplyCollider.End();
+            DTProfilerMarkers.ApplyCollider.End();
 
             // Create mesh from triangulated polygon
-            DTProfileMarkers.Triangulation.Begin();
+            DTProfilerMarkers.Triangulation.Begin();
             DTMesh dtMesh = GetTriangulator().PolygonToMesh(dtPolygon);
-            DTProfileMarkers.Triangulation.End();
+            DTProfilerMarkers.Triangulation.End();
             ApplyRenderMesh(dtMesh);
         }
 
         public override void ApplyTransformedPolygonList(List<DTPolygon> transformedPolygonList) {
-            DTProfileMarkers.Transformation.Begin();
+            DTProfilerMarkers.Transformation.Begin();
             List<DTPolygon> dtPolygonList = new List<DTPolygon>() {
                 new DTPolygon(
                     transformedPolygonList[0].Contour.Select(InverseTransformPoint).ToList(),
                     transformedPolygonList[0].Holes.Select(hole => hole.Select(InverseTransformPoint).ToList()).ToList())
             };
-            DTProfileMarkers.Transformation.End();
+            DTProfilerMarkers.Transformation.End();
 
             ApplyPolygonList(dtPolygonList);
         }
