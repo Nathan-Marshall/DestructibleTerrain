@@ -16,9 +16,7 @@ public class ClickToExplode : MonoBehaviour
             Vector3 worldPoint = Camera.ScreenToWorldPoint(Input.mousePosition);
 
             List<Explosion> explosions = new List<Explosion> {
-                new Explosion(worldPoint.x - 0.3f, worldPoint.y, 0.5f, 24),
-                new Explosion(worldPoint.x, worldPoint.y, 0.5f, 24),
-                new Explosion(worldPoint.x + 0.3f, worldPoint.y, 0.5f, 24)
+                new Explosion(worldPoint.x, worldPoint.y, 2.0f, 24),
             };
 
             IEnumerable<DestructibleObject> destructibleObjects = DestructibleObject.FindAll();

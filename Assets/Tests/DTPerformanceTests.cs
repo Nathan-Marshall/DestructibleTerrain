@@ -148,6 +148,7 @@ public static class DTPerformanceTests
             for (int c = 0; c < columns; ++c) {
                 for (int r = 0; r < rows; ++r) {
                     Vector2 pos = new Vector2(c * spacing - totalWidth * 0.5f, (r + 0.5f) * spacing);
+                    pos.x += UnityEngine.Random.Range(-spacing * 0.1f, spacing * 0.1f);
                     T ring = CreateRingObject<T>(hasHoles, radius, numEdges);
                     if (isStatic) {
                         ring.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
@@ -321,11 +322,19 @@ public static class DTPerformanceTests
 
 
     public static IEnumerator CollisionTestSolids400<T>() where T : DestructibleObject {
-        yield return PhysicsTest<T>(false, 1.0f, 24, 40, 10, 100, 200);
+        yield return PhysicsTest<T>(false, 1.0f, 24, 40, 10, 50, 100);
     }
 
     public static IEnumerator CollisionTestRings400<T>() where T : DestructibleObject {
-        yield return PhysicsTest<T>(true, 1.0f, 24, 40, 10, 100, 200);
+        yield return PhysicsTest<T>(true, 1.0f, 24, 40, 10, 50, 100);
+    }
+
+    public static IEnumerator CollisionTestLargeSolids20<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(false, 10.0f, 240, 5, 4, 275, 200);
+    }
+
+    public static IEnumerator CollisionTestLargeRings20<T>() where T : DestructibleObject {
+        yield return PhysicsTest<T>(true, 10.0f, 240, 5, 4, 275, 200);
     }
 
     public static IEnumerator ContinuousExplosionTestManySolids<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
@@ -346,6 +355,11 @@ public static class DTPerformanceTests
     public static IEnumerator OneTimeExplosionTestManyRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
             where T : DestructibleObject {
         yield return OneTimeExplosionTest<T>(ee, sub, 100, 1, true, 1.0f, 24, 10, 10);
+    }
+
+    public static IEnumerator OneTimeExplosionTestLargeComplexSolids<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
+            where T : DestructibleObject {
+        yield return OneTimeExplosionTest<T>(ee, sub, 10, 1, false, 10.0f, 240, 2, 1);
     }
 
     public static IEnumerator OneTimeExplosionTestLargeComplexRings<T>(IExplosionExecutor ee, IPolygonSubtractor sub)
@@ -371,6 +385,22 @@ public static class DTPerformanceTests
         [UnityTest, Performance] public static IEnumerator PPHM() { yield return CollisionTestRings400<DO_Poly_PPHM>(); }
     }
 
+    public static class CollisionLargeSolids
+    {
+        [UnityTest, Performance] public static IEnumerator Poly() { yield return CollisionTestLargeSolids20<DO_Poly_Poly>(); }
+        [UnityTest, Performance] public static IEnumerator Tri() { yield return CollisionTestLargeSolids20<DO_Poly_Tri>(); }
+        [UnityTest, Performance] public static IEnumerator CHM() { yield return CollisionTestLargeSolids20<DO_Poly_CHM>(); }
+        [UnityTest, Performance] public static IEnumerator PPHM() { yield return CollisionTestLargeSolids20<DO_Poly_PPHM>(); }
+    }
+
+    public static class CollisionLargeRings
+    {
+        [UnityTest, Performance] public static IEnumerator Poly() { yield return CollisionTestLargeRings20<DO_Poly_Poly>(); }
+        [UnityTest, Performance] public static IEnumerator Tri() { yield return CollisionTestLargeRings20<DO_Poly_Tri>(); }
+        [UnityTest, Performance] public static IEnumerator CHM() { yield return CollisionTestLargeRings20<DO_Poly_CHM>(); }
+        [UnityTest, Performance] public static IEnumerator PPHM() { yield return CollisionTestLargeRings20<DO_Poly_PPHM>(); }
+    }
+
     public static class Simple
     {
         [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return SimpleTest<DO_Poly_Poly>(IterEE, ClipperSub); }
@@ -385,7 +415,7 @@ public static class DTPerformanceTests
 
         [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return SimpleTest<DO_Tri_Tri>(IterEE, ORourkeSub); }
         [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return SimpleTest<DO_CHM_CHM>(IterEE, ORourkeSub); }
-        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return SimpleTest<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return SimpleTest<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
     public static class SequentialSolids
@@ -402,7 +432,7 @@ public static class DTPerformanceTests
 
         [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return ContinuousExplosionTestManySolids<DO_Tri_Tri>(IterEE, ORourkeSub); }
         [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return ContinuousExplosionTestManySolids<DO_CHM_CHM>(IterEE, ORourkeSub); }
-        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return ContinuousExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return ContinuousExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
     public static class SequentialRings
@@ -419,7 +449,7 @@ public static class DTPerformanceTests
 
         [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return ContinuousExplosionTestManyRings<DO_Tri_Tri>(IterEE, ORourkeSub); }
         [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return ContinuousExplosionTestManyRings<DO_CHM_CHM>(IterEE, ORourkeSub); }
-        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return ContinuousExplosionTestManyRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
     public static class SimultaneousSolids
@@ -436,7 +466,7 @@ public static class DTPerformanceTests
 
         [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return OneTimeExplosionTestManySolids<DO_Tri_Tri>(IterEE, ORourkeSub); }
         [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return OneTimeExplosionTestManySolids<DO_CHM_CHM>(IterEE, ORourkeSub); }
-        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestManySolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
     public static class SimultaneousRings
@@ -453,10 +483,27 @@ public static class DTPerformanceTests
 
         [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return OneTimeExplosionTestManyRings<DO_Tri_Tri>(IterEE, ORourkeSub); }
         [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return OneTimeExplosionTestManyRings<DO_CHM_CHM>(IterEE, ORourkeSub); }
-        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestManyRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 
-    public static class SimulatneousLargeRings
+    public static class SimultaneousLargeSolids
+    {
+        [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_Poly_Poly>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Poly_Tri_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_Poly_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_CHM_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_Poly_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator Poly_PPHM_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_Poly_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_Tri_Tri>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_CHM_CHM>(IterEE, ClipperSub); }
+        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_Clipper() { yield return OneTimeExplosionTestLargeComplexSolids<DO_PPHM_PPHM>(IterEE, ClipperSub); }
+
+        [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return OneTimeExplosionTestLargeComplexSolids<DO_Tri_Tri>(IterEE, ORourkeSub); }
+        [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return OneTimeExplosionTestLargeComplexSolids<DO_CHM_CHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestLargeComplexSolids<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+    }
+
+    public static class SimultaneousLargeRings
     {
         [UnityTest, Performance] public static IEnumerator Poly_Poly_Clipper() { yield return OneTimeExplosionTestLargeComplexRings<DO_Poly_Poly>(IterEE, ClipperSub); }
 
@@ -470,6 +517,6 @@ public static class DTPerformanceTests
 
         [UnityTest, Performance] public static IEnumerator Tri_Tri_ORourke() { yield return OneTimeExplosionTestLargeComplexRings<DO_Tri_Tri>(IterEE, ORourkeSub); }
         [UnityTest, Performance] public static IEnumerator CHM_CHM_ORourke() { yield return OneTimeExplosionTestLargeComplexRings<DO_CHM_CHM>(IterEE, ORourkeSub); }
-        [UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
+        //[UnityTest, Performance] public static IEnumerator PPHM_PPHM_ORourke() { yield return OneTimeExplosionTestLargeComplexRings<DO_PPHM_PPHM>(IterEE, ORourkeSub); }
     }
 }
