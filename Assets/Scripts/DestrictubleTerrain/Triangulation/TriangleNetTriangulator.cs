@@ -33,6 +33,14 @@ namespace DestructibleTerrain.Triangulation
             else if (subject.Contour.Count == 3 && subject.Holes.Count == 0) {
                 return new DTMesh(subject.Contour, new List<List<int>>() { new List<int>() { 0, 1, 2 } });
             }
+            // If the polygon is convex, use simple fanning technique to triangulate
+            else if (subject.IsConvex()) {
+                DTMesh mesh = new DTMesh(subject.Contour, new List<List<int>>());
+                for (int i = 1; i < subject.Contour.Count - 1; i++) {
+                    mesh.Partitions.Add(new List<int>() { 0, i, i + 1 });
+                }
+                return mesh;
+            }
 
             // Format polygon input and execute
             Polygon polygon = new Polygon();

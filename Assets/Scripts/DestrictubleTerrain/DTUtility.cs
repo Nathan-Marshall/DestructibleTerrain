@@ -31,6 +31,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public static class DTUtility
@@ -263,6 +264,27 @@ public static class DTUtility
 
         DTProfilerMarkers.IdentifyHoles.End();
         return outPoly;
+    }
+
+    // Returns true if the path is convex. Flat angles are allowed.
+    public static bool IsConvex(this List<Vector2> contour) {
+        float firstSign = 0;
+        for (int i = 0; i < contour.Count; i++) {
+            Vector2 v0 = contour.GetCircular(i + 1) - contour[i];
+            Vector2 v1 = contour.GetCircular(i + 2) - contour.GetCircular(i + 1);
+            float sign = Mathf.Sign(v0.Cross(v1));
+            if (firstSign != 0 && sign != firstSign) {
+                return false;
+            } else if (firstSign == 0 && sign != 0) {
+                firstSign = sign;
+            }
+        }
+        return true;
+    }
+
+    // Returns true if the contour is convex and there are no holes. Flat angles are allowed.
+    public static bool IsConvex(this DTPolygon poly) {
+        return poly.Holes.Count == 0 && poly.Contour.IsConvex();
     }
 
     // Adapted from code in clipper.cs from Clipper library http://www.angusj.com/delphi/clipper.php
