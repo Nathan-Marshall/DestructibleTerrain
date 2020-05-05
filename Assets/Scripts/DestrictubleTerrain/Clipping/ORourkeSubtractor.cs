@@ -1,4 +1,5 @@
 ﻿using ClipperLib;
+using DestructibleTerrain.Triangulation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,17 +34,17 @@ namespace DestructibleTerrain.Clipping
             }
         }
 
-        DTPolygon polyP;
-        DTPolygon polyQ;
+        List<Vector2> polyP;
+        List<Vector2> polyQ;
         int pIndex;
         int qIndex;
 
         Vector2 PPrev {
-            get { return polyP.V(pIndex - 1); }
+            get { return polyP.GetCircular(pIndex - 1); }
         }
         Vector2 P {
             get {
-                return polyP.V(pIndex);
+                return polyP.GetCircular(pIndex);
             }
         }
         Vector2 PEdge {
@@ -53,10 +54,10 @@ namespace DestructibleTerrain.Clipping
         }
 
         Vector2 QPrev {
-            get { return polyQ.V(qIndex - 1); }
+            get { return polyQ.GetCircular(qIndex - 1); }
         }
         Vector2 Q {
-            get { return polyQ.V(qIndex); }
+            get { return polyQ.GetCircular(qIndex); }
         }
         Vector2 QEdge {
             get {
@@ -70,11 +71,18 @@ namespace DestructibleTerrain.Clipping
         private ORourkeSubtractor() {}
 
         public List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
+            SubtractInternal(subject.Contour, clippingPolygon.Contour, out List<DTPolygon> outputPolygons);
+            return outputPolygons;
+        }
+
+        // Returns true if the subject polygon was modified at all
+        private bool SubtractInternal(List<Vector2> subject, List<Vector2> clippingPolygon, out List<DTPolygon> outputPolygons) {
             if (!DTUtility.BoundsCheck(subject, clippingPolygon)) {
                 // There is no overlap at all, so output a copy of the subject polygon
-                return new List<DTPolygon>() {
-                    new DTPolygon(new List<Vector2>(subject.Contour))
+                outputPolygons = new List<DTPolygon>() {
+                    new DTPolygon(new List<Vector2>(subject))
                 };
+                return false;
             }
 
             polyP = subject;
@@ -89,14 +97,14 @@ namespace DestructibleTerrain.Clipping
             int? firstIntersectionQIndex = null;
 
             // List of disjoint output polygons after subtraction
-            List<DTPolygon> outputPolygons = new List<DTPolygon>();
+            outputPolygons = new List<DTPolygon>();
 
             // Working output polygon vertices
             polygonBegin = null;
             List<Vector2> pVertices = new List<Vector2>();
             List<Vector2> qVertices = new List<Vector2>();
 
-            for (int i = 0; i <= 2*(polyP.Contour.Count + polyQ.Contour.Count); ++i) {
+            for (int i = 0; i <= 2*(polyP.Count + polyQ.Count); ++i) {
                 if (polygonBegin.HasValue) {
                     Vector2? exitIntersection = ExitIntersection();
                     if (exitIntersection.HasValue) {
@@ -189,25 +197,28 @@ namespace DestructibleTerrain.Clipping
             if (outputPolygons.Count == 0) {
                 if (polyP.Inside(polyQ)) {
                     // P is entirely within Q, so do nothing. The entire polygon has been subtracted
+                    return true;
                 } else if (polyQ.Inside(polyP)) {
                     // Q is entirely within P, so output a copy of P, with Q (reversed) set as a hole
                     outputPolygons.Add(new DTPolygon(
-                        new List<Vector2>(polyP.Contour),
+                        new List<Vector2>(polyP),
                         new List<List<Vector2>>() {
-                            polyQ.Contour.AsEnumerable().Reverse().ToList()
+                            polyQ.AsEnumerable().Reverse().ToList()
                         }));
+                    return true;
                 } else {
                     if (polyP.Simplify() == polyQ.Simplify()) {
                         // The polygons are equal, so do nothing. The entire polygon has been subtracted
-                    }
-                    else {
+                        return true;
+                    } else {
                         // There is no overlap at all, so output a copy of P
-                        outputPolygons.Add(new DTPolygon(new List<Vector2>(polyP.Contour)));
+                        outputPolygons.Add(new DTPolygon(new List<Vector2>(polyP)));
+                        return false;
                     }
                 }
             }
 
-            return outputPolygons;
+            return true;
         }
         
         public List<List<DTPolygon>> SubtractPolygroup(IEnumerable<DTPolygon> inputPolygroup, IEnumerable<DTPolygon> clippingPolygons) {
@@ -224,6 +235,28 @@ namespace DestructibleTerrain.Clipping
             }
 
             return workingPolygons.CreatePolygroups();
+        }
+
+        public List<PolygroupModifier> AdvancedSubtractPolygroup(PolygroupModifier subjectPolygroup, List<Vector2> clippingPolygon) {
+            // The polygons to keep from the subject polygroup, by index
+            List<int> keptIndices = new List<int>();
+
+            // The new triangles added from the triangulated clipped polygons
+            List<List<Vector2>> newTriangles = new List<List<Vector2>>();
+
+            foreach (int i in subjectPolygroup.keptIndices) {
+                List<Vector2> originalPolygon = subjectPolygroup.originalPolygroup[i];
+                if (SubtractInternal(originalPolygon, clippingPolygon, out List<DTPolygon> subOutput)) {
+                    DTProfilerMarkers.Triangulation.Begin();
+                    List<List<Vector2>> triangles = DTUtility.TriangulateAll(subOutput, TriangleNetTriangulator.Instance);
+                    DTProfilerMarkers.Triangulation.End();
+                    newTriangles.AddRange(triangles);
+                } else {
+                    keptIndices.Add(i);
+                }
+            }
+
+            return Polygrouper.AdvancedCreatePolygroups(subjectPolygroup.originalPolygroup, keptIndices, newTriangles);
         }
 
         public List<List<List<DTPolygon>>> SubtractBulk(IEnumerable<IEnumerable<DTPolygon>> inputPolygroups, IEnumerable<DTPolygon> clippingPolygons) {
@@ -290,22 +323,18 @@ namespace DestructibleTerrain.Clipping
         }
 
         int ModP(int pi) {
-            return ((pi % polyP.Contour.Count) + polyP.Contour.Count) % polyP.Contour.Count;
+            return ((pi % polyP.Count) + polyP.Count) % polyP.Count;
         }
 
         int ModQ(int qi) {
-            return ((qi % polyQ.Contour.Count) + polyQ.Contour.Count) % polyQ.Contour.Count;
+            return ((qi % polyQ.Count) + polyQ.Count) % polyQ.Count;
         }
     }
 
     static class ExtensionsForORourkeSubtractor
     {
-        public static Vector2 V(this DTPolygon poly, int i) {
-            return poly.Contour.GetCircular(i);
-        }
-
-        public static bool Inside(this DTPolygon polyA, DTPolygon polyB) {
-            foreach (Vector2 a in polyA.Contour) {
+        public static bool Inside(this List<Vector2> polyA, List<Vector2> polyB) {
+            foreach (Vector2 a in polyA) {
                 bool? aInside = a.Inside(polyB);
                 if (aInside.HasValue) {
                     return aInside.Value;
@@ -314,9 +343,9 @@ namespace DestructibleTerrain.Clipping
             return false;
         }
 
-        public static bool? Inside(this Vector2 point, DTPolygon poly) {
-            for (int i = 0; i < poly.Contour.Count; i++) {
-                float cross = (poly.V(i) - poly.V(i - 1)).Cross(point - poly.V(i - 1));
+        public static bool? Inside(this Vector2 point, List<Vector2> poly) {
+            for (int i = 0; i < poly.Count; i++) {
+                float cross = (poly.GetCircular(i) - poly.GetCircular(i - 1)).Cross(point - poly.GetCircular(i - 1));
                 if (cross < 0) {
                     return false;
                 } else if (cross == 0) {

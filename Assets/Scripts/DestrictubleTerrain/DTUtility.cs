@@ -134,7 +134,7 @@ public static class DTUtility
     }
 
     // Removes unnecessary vertices
-    public static List<Vector2> SimplifyContour(List<Vector2> inContour) {
+    public static List<Vector2> Simplify(this List<Vector2> inContour) {
         if (inContour.Count < 3) {
             return null;
         }
@@ -189,7 +189,7 @@ public static class DTUtility
         // Repeat until all loops are found
         while (workingContour.Count > 0) {
             // Simplify contour to remove edges that overlap the previous edge
-            workingContour = SimplifyContour(workingContour);
+            workingContour = workingContour.Simplify();
             if (workingContour == null) {
                 break;
             }
@@ -389,7 +389,7 @@ public static class DTUtility
             DTProfilerMarkers.SimplifyPolygon.End();
             return null;
         }
-        var simplifiedContour = SimplifyContour(inPoly.Contour);
+        var simplifiedContour = inPoly.Contour.Simplify();
         if (simplifiedContour == null) {
             DTProfilerMarkers.SimplifyPolygon.End();
             return null;
@@ -397,7 +397,7 @@ public static class DTUtility
 
         List<List<Vector2>> simplifiedHoles = new List<List<Vector2>>();
         foreach (var hole in inPoly.Holes) {
-            var simplifiedHole = SimplifyContour(hole);
+            var simplifiedHole = hole.Simplify();
             if (simplifiedContour.Count != 0) {
                 simplifiedHoles.Add(simplifiedHole);
             }
@@ -448,10 +448,10 @@ public static class DTUtility
     }
     
     // Returns true if bounds overlap
-    public static bool BoundsCheck(DTPolygon a, DTPolygon b) {
-        Vector2 aMin = a.Contour[0];
-        Vector2 aMax = a.Contour[0];
-        foreach (Vector2 v in a.Contour) {
+    public static bool BoundsCheck(List<Vector2> a, List<Vector2> b) {
+        Vector2 aMin = a[0];
+        Vector2 aMax = a[0];
+        foreach (Vector2 v in a) {
             if (v.x < aMin.x) {
                 aMin.x = v.x;
             }
@@ -466,9 +466,9 @@ public static class DTUtility
             }
         }
 
-        Vector2 bMin = b.Contour[0];
-        Vector2 bMax = b.Contour[0];
-        foreach (Vector2 v in b.Contour) {
+        Vector2 bMin = b[0];
+        Vector2 bMax = b[0];
+        foreach (Vector2 v in b) {
             if (v.x < bMin.x) {
                 bMin.x = v.x;
             }

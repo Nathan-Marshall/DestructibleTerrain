@@ -86,7 +86,7 @@ public static class DTUnitTests
         public static void SimplifyContour () {
             var inContour = L(V(0, 0), V(1, 0), V(2, 0), V(3, 0), V(3, 1), V(2, 1), V(2, 2), V(2, 3), V(3, 3), V(2, 3), V(2, 2), V(2, 1), V(1, 1), V(0, 1), V(0, 1), V(0, 0));
             var expectedContour = L(V(3, 0), V(3, 1), V(0, 1), V(0, 0));
-            var outContour = DTUtility.SimplifyContour(inContour);
+            var outContour = inContour.Simplify();
             Assert.AreEqual(outContour.Count, expectedContour.Count);
             for (int i = 0; i < expectedContour.Count; ++i) {
                 Assert.AreEqual(outContour[i], expectedContour[i]);

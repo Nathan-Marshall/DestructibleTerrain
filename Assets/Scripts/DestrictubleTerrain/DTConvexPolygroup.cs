@@ -12,10 +12,10 @@ namespace DestructibleTerrain
         public DTConvexPolygroup()
             : base() { }
 
-        public DTConvexPolygroup(List<List<Vector2>> polygons)
+        public DTConvexPolygroup(IEnumerable<List<Vector2>> polygons)
             : base(polygons) { }
 
-        public DTConvexPolygroup(List<DTPolygon> polygons)
+        public DTConvexPolygroup(IEnumerable<DTPolygon> polygons)
             : base(polygons.Select(poly => poly.Contour).ToList()) { }
 
         public List<DTPolygon> ToPolygonList() {

@@ -63,9 +63,17 @@ namespace DestructibleTerrain.Destructible
             return new Vector2(v3.x, v3.y);
         }
 
+        public List<Vector2> TransformPoints(IEnumerable<Vector2> points) {
+            return points.Select(TransformPoint).ToList();
+        }
+
         public Vector2 InverseTransformPoint(Vector2 p) {
             var v3 = transform.InverseTransformPoint(p.x, p.y, 0);
             return new Vector2(v3.x, v3.y);
+        }
+
+        public List<Vector2> InverseTransformPoints(IEnumerable<Vector2> points) {
+            return points.Select(InverseTransformPoint).ToList();
         }
 
         public abstract List<DTPolygon> GetTransformedPolygonList();

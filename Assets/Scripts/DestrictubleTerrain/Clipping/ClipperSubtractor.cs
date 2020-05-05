@@ -25,7 +25,7 @@ namespace DestructibleTerrain.Clipping
         }
 
         public List<DTPolygon> Subtract(DTPolygon subject, DTPolygon clippingPolygon) {
-            if (!DTUtility.BoundsCheck(subject, clippingPolygon)) {
+            if (!DTUtility.BoundsCheck(subject.Contour, clippingPolygon.Contour)) {
                 // There is no overlap at all, so output a copy of the subject polygon
                 return new List<DTPolygon>() {
                     new DTPolygon(new List<Vector2>(subject.Contour))

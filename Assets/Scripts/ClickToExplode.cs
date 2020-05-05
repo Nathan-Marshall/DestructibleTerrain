@@ -24,7 +24,7 @@ public class ClickToExplode : MonoBehaviour
             var stopwatch = new System.Diagnostics.Stopwatch();
             stopwatch.Restart();
 
-            IterativeExplosionExecutor.Instance.ExecuteExplosions(explosions, destructibleObjects, ClipperSubtractor.Instance);
+            AdvancedIterativeExplosionExecutor.Instance.ExecuteExplosions(explosions, destructibleObjects, ORourkeSubtractor.Instance);
 
             stopwatch.Stop();
             //stopwatch.LogTime("Execute Explosions");
