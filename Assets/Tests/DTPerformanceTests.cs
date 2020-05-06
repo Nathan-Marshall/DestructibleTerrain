@@ -55,6 +55,7 @@ public static class DTPerformanceTests
             
             // DestructibleTerrain ProfilerMarkers
             new SampleGroupDefinition(DTProfilerMarkers.ApplyColliderStr),
+            new SampleGroupDefinition(DTProfilerMarkers.ApplyRenderMeshStr),
             new SampleGroupDefinition(DTProfilerMarkers.HertelMehlhornStr),
             new SampleGroupDefinition(DTProfilerMarkers.IdentifyHolesStr),
             new SampleGroupDefinition(DTProfilerMarkers.MeshToPolygroupStr),

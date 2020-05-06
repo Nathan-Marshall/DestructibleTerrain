@@ -127,12 +127,23 @@ namespace DestructibleTerrain.Destructible
             }
             dtRenderMesh = dtMesh;
 
+            DTProfilerMarkers.ApplyRenderMesh.Begin();
+
             MeshFilter mf = GetComponent<MeshFilter>();
-            mf.sharedMesh = new Mesh() {
-                vertices = dtMesh.Vertices.Select(v => new Vector3(v.x, v.y)).ToArray(),
-                uv = dtMesh.Vertices.ToArray(),
-                triangles = dtMesh.Partitions.SelectMany(t => t.GetRange(0, 3).AsEnumerable().Reverse()).ToArray()
-            };
+            PolygonCollider2D polygonCollider = GetComponent<PolygonCollider2D>();
+            if (Application.isEditor && !Application.isPlaying) {
+                // Use sharedMesh in Editor to avoid leaking meshes
+                mf.sharedMesh = polygonCollider.CreateMesh(false, false);
+                Vector3 s = transform.localScale;
+                mf.sharedMesh.vertices = mf.sharedMesh.vertices.Select(v => new Vector3(v.x / s.x, v.y / s.y, 0)).ToArray();
+            } else {
+                // Use mesh in Play mode because otherwise the mesh is not immediately generated (creates race condition)
+                mf.mesh = polygonCollider.CreateMesh(false, false);
+                Vector3 s = transform.localScale;
+                mf.mesh.vertices = mf.sharedMesh.vertices.Select(v => new Vector3(v.x / s.x, v.y / s.y, 0)).ToArray();
+            }
+
+            DTProfilerMarkers.ApplyRenderMesh.End();
         }
 
         protected ITriangulator GetTriangulator() {

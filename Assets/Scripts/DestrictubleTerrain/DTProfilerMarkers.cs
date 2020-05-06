@@ -7,6 +7,9 @@ public static class DTProfilerMarkers
     public static readonly string ApplyColliderStr = Namespace + ".ApplyCollider";
     public static readonly ProfilerMarker ApplyCollider = new ProfilerMarker(ApplyColliderStr);
 
+    public static readonly string ApplyRenderMeshStr = Namespace + ".ApplyRenderMesh";
+    public static readonly ProfilerMarker ApplyRenderMesh = new ProfilerMarker(ApplyRenderMeshStr);
+
     public static readonly string HertelMehlhornStr = Namespace + ".HertelMehlhorn";
     public static readonly ProfilerMarker HertelMehlhorn = new ProfilerMarker(HertelMehlhornStr);
 
