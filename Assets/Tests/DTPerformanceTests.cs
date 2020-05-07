@@ -48,26 +48,26 @@ public static class DTPerformanceTests
         public static readonly string PhysicsStr = "FixedUpdate.Physics2DFixedUpdate";
         public static readonly ProfilerMarker Physics = new ProfilerMarker(PhysicsStr);
 
-        public static readonly SampleGroupDefinition[] SampleGroupDefinitions = {
+        public static readonly string[] SampleGroupDefinitions = {
             // DTPerformanceTests ProfilerMarkers
-            new SampleGroupDefinition(CreationStr),
-            new SampleGroupDefinition(ProcessExplosionsStr),
+            CreationStr,
+            ProcessExplosionsStr,
             
             // DestructibleTerrain ProfilerMarkers
-            new SampleGroupDefinition(DTProfilerMarkers.ApplyColliderStr),
-            new SampleGroupDefinition(DTProfilerMarkers.HertelMehlhornStr),
-            new SampleGroupDefinition(DTProfilerMarkers.IdentifyHolesStr),
-            new SampleGroupDefinition(DTProfilerMarkers.MeshToPolygroupStr),
-            new SampleGroupDefinition(DTProfilerMarkers.PolygroupToMeshStr),
-            new SampleGroupDefinition(DTProfilerMarkers.PolygrouperStr),
-            new SampleGroupDefinition(DTProfilerMarkers.SimplifyPolygonStr),
-            new SampleGroupDefinition(DTProfilerMarkers.SubtractPolygroupStr),
-            new SampleGroupDefinition(DTProfilerMarkers.TransformationStr),
-            new SampleGroupDefinition(DTProfilerMarkers.TriangulationStr),
-            new SampleGroupDefinition(DTProfilerMarkers.TriangleNetStr),
+            DTProfilerMarkers.ApplyColliderStr,
+            DTProfilerMarkers.HertelMehlhornStr,
+            DTProfilerMarkers.IdentifyHolesStr,
+            DTProfilerMarkers.MeshToPolygroupStr,
+            DTProfilerMarkers.PolygroupToMeshStr,
+            DTProfilerMarkers.PolygrouperStr,
+            DTProfilerMarkers.SimplifyPolygonStr,
+            DTProfilerMarkers.SubtractPolygroupStr,
+            DTProfilerMarkers.TransformationStr,
+            DTProfilerMarkers.TriangulationStr,
+            DTProfilerMarkers.TriangleNetStr,
 
             // Unity ProfilerMarkers
-            new SampleGroupDefinition(PhysicsStr),
+            PhysicsStr,
         };
     }
 
@@ -309,7 +309,7 @@ public static class DTPerformanceTests
         using (Measure.ProfilerMarkers(ProfilerMarkers.SampleGroupDefinitions)) {
             for (int updates = 0; updates < numFrames; ++updates) {
                 onFrame?.Invoke();
-                Measure.Custom(new SampleGroupDefinition(ProfilerMarkers.TotalAllocatedMemoryStr, SampleUnit.Megabyte),
+                Measure.Custom(new SampleGroup(ProfilerMarkers.TotalAllocatedMemoryStr, SampleUnit.Megabyte),
                     Profiler.GetTotalAllocatedMemoryLong() / 1048576f);
                 yield return new WaitForFixedUpdate();
             }
