@@ -363,6 +363,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 150
   height: 400
+  maxHillHeight: 12
+  hillPerlinSampleDistance: 0.05
+  minimumCaveDepth: 4
   population: 0.57
   smoothIterations: 7
   seed: 
