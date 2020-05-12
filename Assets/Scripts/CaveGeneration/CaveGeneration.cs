@@ -22,7 +22,6 @@ public class CaveGeneration : MonoBehaviour
     private System.Random rand;
     private bool[,] grid;
     private int[] surfaceHeights;
-    private ConnectivityNode[,] connectivityGrid;
     private GridIntersection[,] intersectionGrid;
 
     void Start() {
@@ -33,7 +32,6 @@ public class CaveGeneration : MonoBehaviour
         InitializeSeed();
         GenerateSurfaceHeights();
         GeneratePixelGrid();
-        GenerateConnectivityGrid();
         GenerateIntersectionGrid();
         GeneratePixelRenderMesh();
         DetectContours(out List<List<Vector2>> solidContours, out List<List<Vector2>> holeContours);
@@ -147,19 +145,6 @@ public class CaveGeneration : MonoBehaviour
         return InGridBounds(c, r) && grid[c, r];
     }
 
-    private ConnectivityNode GetConnectivityNode(int c, int r) {
-        return InGridBounds(c, r) ? connectivityGrid[c, r] : null;
-    }
-
-    ConnectivityNode GetIfConnected(int c, int r, bool isSolid) {
-        if (GetCell(c, r) == isSolid) {
-            return GetConnectivityNode(c, r);
-        }
-        else {
-            return null;
-        }
-    }
-
     private GridIntersection GetIntersection(int c, int r) {
         return IntersectionInBounds(c, r) ? intersectionGrid[c, r] : null;
     }
@@ -233,56 +218,6 @@ public class CaveGeneration : MonoBehaviour
 
         public Vector2 ToVec() {
             return new Vector2(x, y);
-        }
-    }
-
-    private class ConnectivityNode
-    {
-        public ConnectivityNode lb, l, lt, b, t, rb, r, rt;
-    }
-
-    private void GenerateConnectivityGrid() {
-        // Initialize grid
-        connectivityGrid = new ConnectivityNode[width, height];
-        for (int c = 0; c < width; c++) {
-            for (int r = 0; r < height; r++) {
-                connectivityGrid[c, r] = new ConnectivityNode();
-            }
-        }
-
-        // Connect grid
-        for (int c = 0; c < width; c++) {
-            for (int r = 0; r < height; r++) {
-                bool isSolid = grid[c, r];
-                connectivityGrid[c, r].lb = GetIfConnected(c - 1, r - 1, isSolid);
-                connectivityGrid[c, r].l = GetIfConnected(c - 1, r, isSolid);
-                connectivityGrid[c, r].lt = GetIfConnected(c - 1, r + 1, isSolid);
-
-                connectivityGrid[c, r].b = GetIfConnected(c, r - 1, isSolid);
-                connectivityGrid[c, r].t = GetIfConnected(c, r + 1, isSolid);
-
-                connectivityGrid[c, r].rb = GetIfConnected(c + 1, r - 1, isSolid);
-                connectivityGrid[c, r].r = GetIfConnected(c + 1, r, isSolid);
-                connectivityGrid[c, r].rt = GetIfConnected(c + 1, r + 1, isSolid);
-            }
-        }
-
-        // If solid and hole connections cross diagonally, remove the hole connection
-        for (int c = 0; c < width - 1; c++) {
-            for (int r = 0; r < height - 1; r++) {
-                if (grid[c, r] != grid[c + 1, r] && grid[c, r] == grid[c + 1, r + 1] && grid[c + 1, r] == grid[c, r + 1]) {
-                    // If lower left and upper right are hole cells, remove their connection
-                    if (!grid[c, r]) {
-                        connectivityGrid[c, r].rt = null;
-                        connectivityGrid[c + 1, r + 1].lb = null;
-                    }
-                    // If lower right and upper left are hole cells, remove their connection
-                    else {
-                        connectivityGrid[c + 1, r].lt = null;
-                        connectivityGrid[c, r + 1].rb = null;
-                    }
-                }
-            }
         }
     }
 
