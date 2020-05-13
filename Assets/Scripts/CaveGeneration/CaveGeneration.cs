@@ -1,7 +1,10 @@
-﻿using System.Collections;
+﻿using DestructibleTerrain;
+using DestructibleTerrain.Destructible;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
@@ -12,11 +15,13 @@ public class CaveGeneration : MonoBehaviour
     public int height = 400;
 
     public int maxHillHeight = 12;
-    public float hillPerlinSampleDistance = 0.05f;
+    public float perlinXScale = 20.0f;
+    public float surfaceSampleDistance = 0.2f;
     public int minimumCaveDepth = 4;
+    public int minContourPoints = 30;
 
-    public float population = 0.57f;
-    public int smoothIterations = 7;
+    public float population = 0.54f;
+    public int smoothIterations = 20;
     public string seed;
 
     private System.Random rand;
@@ -29,13 +34,35 @@ public class CaveGeneration : MonoBehaviour
     }
 
     public void Generate() {
+        // Pixel-based cave generation
         InitializeSeed();
-        GenerateSurfaceHeights();
+        Vector2 sampleStart = new Vector2((float)rand.NextDouble() * 50000, (float)rand.NextDouble() * 50000);
+        GenerateSurfaceHeights(sampleStart);
         GeneratePixelGrid();
-        GenerateIntersectionGrid();
+
+        CreatePixelRenderMesh();
+
+        // Detect contours
+        ComputeIntersectionGrid();
         DetectContours(out List<List<Vector2>> solidContours, out List<List<Vector2>> holeContours);
 
-        GeneratePixelRenderMesh();
+        holeContours = PruneHoles(solidContours, holeContours);
+        List<Vector2> realOuterContour = ComputeOuterContour(sampleStart);
+
+        // Construct main terrain object
+        DTPolygon mainPolygon = new DTPolygon(realOuterContour, holeContours);
+        DestructibleObject mainDTObj = new GameObject().AddComponent<DO_Polygon_Clip_Collide>();
+        mainDTObj.ApplyPolygonList(new List<DTPolygon> { mainPolygon });
+        mainDTObj.GetComponent<Rigidbody2D>().isKinematic = true;
+        mainDTObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
+
+        // Construct additional terrain objects
+        for (int i = 1; i < solidContours.Count; i++) {
+            DTPolygon poly = new DTPolygon(solidContours[i]);
+            DestructibleObject dtObj = new GameObject().AddComponent<DO_Polygon_Clip_Collide>();
+            dtObj.ApplyPolygonList(new List<DTPolygon> { poly });
+            dtObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
+        }
     }
 
     // Initialize random seed
@@ -52,11 +79,10 @@ public class CaveGeneration : MonoBehaviour
         }
     }
 
-    private void GenerateSurfaceHeights() {
+    private void GenerateSurfaceHeights(Vector2 sampleStart) {
         surfaceHeights = new int[width];
-        float sampleStart = (float)rand.NextDouble() * 50000;
         for (int c = 0; c < width; c++) {
-            surfaceHeights[c] = height - maxHillHeight + Mathf.Clamp((int)(Mathf.PerlinNoise(sampleStart + c * hillPerlinSampleDistance, 0) * (maxHillHeight + 1)), 0, maxHillHeight);
+            surfaceHeights[c] = height - Mathf.Clamp((int)(Mathf.PerlinNoise(sampleStart.x + c / perlinXScale, sampleStart.y) * (maxHillHeight + 1)), 0, maxHillHeight);
         }
     }
 
@@ -174,7 +200,7 @@ public class CaveGeneration : MonoBehaviour
         return GetCell(c, r) && (GetCell(c - 1, r) || GetCell(c + 1, r) || GetCell(c, r - 1) || GetCell(c, r + 1));
     }
 
-    private void GeneratePixelRenderMesh() {
+    private void CreatePixelRenderMesh() {
         Vector3[] vertices = new Vector3[(width + 1) * (height + 1)];
         for (int c = 0; c <= width; c++) {
             for (int r = 0; r <= height; r++) {
@@ -339,7 +365,7 @@ public class CaveGeneration : MonoBehaviour
         }
     }
 
-    private void GenerateIntersectionGrid() {
+    private void ComputeIntersectionGrid() {
         intersectionGrid = new GridIntersection[width + 1, height + 1];
 
         for (int c = 0; c <= width; c++) {
@@ -358,7 +384,7 @@ public class CaveGeneration : MonoBehaviour
     private void DetectContours(out List<List<Vector2>> solidContours, out List<List<Vector2>> holeContours) {
         solidContours = new List<List<Vector2>>();
         holeContours = new List<List<Vector2>>();
-        
+
         // Begin checking each intersection for remaining contours to walk
         for (int c = 0; c <= width; c++) {
             for (int r = 0; r <= height; r++) {
@@ -404,5 +430,50 @@ public class CaveGeneration : MonoBehaviour
                 }
             }
         }
+    }
+
+    private List<List<Vector2>> PruneHoles(List<List<Vector2>> solidContours, List<List<Vector2>> holeContours) {
+        // Remove any holes that are inside solid contours other than the outer contour
+        List<List<Vector2>> keptHoles = new List<List<Vector2>>();
+
+        for (int i = 0; i < holeContours.Count; i++) {
+            List<Vector2> hole = holeContours[i];
+            bool keep = true;
+
+            for (int j = 1; j < solidContours.Count; j++) {
+                if (hole.Count < minContourPoints || DTUtility.QuickPolyInPoly(hole, solidContours[j])) {
+                    keep = false;
+                    break;
+                }
+            }
+
+            if (keep) {
+                keptHoles.Add(hole);
+            }
+        }
+
+        return keptHoles;
+    }
+
+    private List<Vector2> ComputeOuterContour(Vector2 sampleStart) {
+        // Ignore the outer contour detected by the contour detection algorithm. Instead, resample from the perlin
+        // noise at a higher frequency and then add the bottom left and right corners.
+        List<Vector2> realOuterContour = new List<Vector2>();
+        for (float x = 0; x < width; x += surfaceSampleDistance) {
+            float y = height - Mathf.PerlinNoise(sampleStart.x + x / perlinXScale, sampleStart.y) * maxHillHeight;
+            realOuterContour.Add(new Vector2(x, y));
+        }
+
+        // Top right corner
+        float lastY = height - Mathf.PerlinNoise(sampleStart.x + width / perlinXScale, sampleStart.y) * maxHillHeight;
+        realOuterContour.Add(new Vector2(width, lastY));
+
+        // Bottom right corner
+        realOuterContour.Add(new Vector2(width, 0));
+
+        // Bottom left corner
+        realOuterContour.Add(new Vector2(0, 0));
+
+        return realOuterContour;
     }
 }

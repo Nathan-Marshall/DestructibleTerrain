@@ -364,11 +364,13 @@ MonoBehaviour:
   width: 150
   height: 400
   maxHillHeight: 12
-  hillPerlinSampleDistance: 0.05
+  perlinXScale: 20
+  surfaceSampleDistance: 0.2
   minimumCaveDepth: 4
-  population: 0.57
-  smoothIterations: 7
-  seed: 
+  minContourPoints: 30
+  population: 0.54
+  smoothIterations: 20
+  seed: test
 --- !u!23 &900389852
 MeshRenderer:
   m_ObjectHideFlags: 0
