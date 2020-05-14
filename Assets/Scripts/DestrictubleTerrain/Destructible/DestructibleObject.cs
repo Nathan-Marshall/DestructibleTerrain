@@ -22,7 +22,7 @@ namespace DestructibleTerrain.Destructible
         public static string DestructibleObjectTag = "DestructibleObject";
 
         // Destroy this GameObject if the mass drops below this threshold after finished updating collider
-        public static float MassCutoff = 0.02f;
+        public static float MassCutoff = 1.0f;
 
         public static IEnumerable<DestructibleObject> FindAll() {
             return GameObject.FindGameObjectsWithTag(DestructibleObjectTag).Select(go => go.GetComponent<DestructibleObject>());

@@ -54,7 +54,7 @@ public class CaveGeneration : MonoBehaviour
 
         // Construct main terrain object
         DTPolygon mainPolygon = new DTPolygon(realOuterContour, holeContours);
-        DestructibleObject mainDTObj = new GameObject().AddComponent<DO_Polygon_Clip_Collide>();
+        DestructibleObject mainDTObj = new GameObject("Main Terrain Object").AddComponent<DO_Polygon_Clip_Collide>();
         mainDTObj.ApplyPolygonList(new List<DTPolygon> { mainPolygon });
         mainDTObj.GetComponent<Rigidbody2D>().isKinematic = true;
         mainDTObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
@@ -62,7 +62,7 @@ public class CaveGeneration : MonoBehaviour
         // Construct additional terrain objects
         for (int i = 1; i < solidContours.Count; i++) {
             DTPolygon poly = new DTPolygon(SmoothPolygon(solidContours[i]));
-            DestructibleObject dtObj = new GameObject().AddComponent<DO_Polygon_Clip_Collide>();
+            DestructibleObject dtObj = new GameObject("Terrain Object").AddComponent<DO_Polygon_Clip_Collide>();
             dtObj.ApplyPolygonList(new List<DTPolygon> { poly });
             dtObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
         }

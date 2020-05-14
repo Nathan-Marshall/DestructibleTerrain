@@ -227,9 +227,17 @@ namespace DestructibleTerrain.Clipping
 
         public static List<DTPolygon> ToDTPolygons(this PolyTree tree) {
             List<DTPolygon> output = new List<DTPolygon>();
-            foreach (var poly in tree.Childs) {
+            for (int i = 0; i < tree.ChildCount; i++) {
+                var poly = tree.Childs[i];
                 List<Vector2> contour = poly.Contour.ToVector2List();
                 List<List<Vector2>> holes = poly.Childs.Select(hole => hole.Contour.ToVector2List()).ToList();
+
+                // Any children of a hole are also solid contours, so we move them to be children of the root
+                foreach (var hole in poly.Childs) {
+                    tree.Childs.AddRange(hole.Childs);
+                    hole.Childs.Clear();
+                }
+
                 output.Add(new DTPolygon(contour, holes));
             }
             return output;

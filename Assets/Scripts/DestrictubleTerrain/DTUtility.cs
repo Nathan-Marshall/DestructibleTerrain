@@ -37,6 +37,7 @@ using UnityEngine;
 public static class DTUtility
 {
     public const int FixedPointConversion = 10000000;
+    public static readonly float AngleEpsilon = 0.00001f;
 
     public class ApproximateVector2Comparer : IEqualityComparer<Vector2>
     {
@@ -144,7 +145,7 @@ public static class DTUtility
         for (int i = 0; i < contour.Count; ++i) {
             Vector2 fromPrev = contour.GetCircular(i) - contour.GetCircular(i - 1);
             Vector2 toNext = contour.GetCircular(i + 1) - contour.GetCircular(i);
-            if (fromPrev.Cross(toNext) == 0) {
+            if (Mathf.Abs(fromPrev.Cross(toNext)) <= AngleEpsilon) {
                 contour.RemoveAt((i % contour.Count + contour.Count) % contour.Count);
                 if (contour.Count < 3) {
                     return null;
@@ -202,9 +203,10 @@ public static class DTUtility
                     // Separate this loop from the working contour
                     int start = vertices[v];
                     int count = i - start;
-                    loops.Add(workingContour.GetRange(start, count));
+                    if (count > 2) {
+                        loops.Add(workingContour.GetRange(start, count));
+                    }
                     workingContour.RemoveRange(start, count);
-                    vertices[v] = i;
                     // Stop so that we can simplify the polygon and start from the beginning to find the next loop
                     break;
                 }
@@ -245,7 +247,8 @@ public static class DTUtility
                     outPoly.Holes.Add(loops[i]);
                     loops[i] = null;
                     break;
-                } else if (QuickPolyInPoly(loops[j], loops[i])) {
+                }
+                else if (QuickPolyInPoly(loops[j], loops[i])) {
                     loops[j].SetCW();
                     outPoly.Holes.Add(loops[j]);
                     loops[j] = null;
@@ -255,10 +258,26 @@ public static class DTUtility
         }
 
         // Join any remaining loops and make the result the contour of the new polygon
-        for (int i = 1; i < loops.Count; ++i) {
-            if (loops[i] != null) {
-                loops[i].SetCCW();
-                outPoly.Contour = JoinContours(outPoly.Contour, loops[i]);
+        while (loops.Where(loop => loop != null).Any()) {
+            bool modified = false;
+            for (int i = 0; i < loops.Count; ++i) {
+                if (loops[i] != null) {
+                    loops[i].SetCCW();
+                    List<Vector2> joinResult = JoinContours(outPoly.Contour, loops[i]);
+                    if (joinResult != null) {
+                        outPoly.Contour = joinResult;
+                        loops[i] = null;
+                        modified = true;
+                    }
+                }
+            }
+
+            // If there are still loops but no change was made, then some of the loops are entirely disconnected.
+            // This should not happen.
+            int loopCount = loops.Where(loop => loop != null).Count();
+            if (!modified && loopCount > 0) {
+                Debug.LogError(loopCount + " loops were disconnected.");
+                break;
             }
         }
 
@@ -351,7 +370,7 @@ public static class DTUtility
         // Add all of a's vertices to a map
         Dictionary<Vector2, int> aVertices = new Dictionary<Vector2, int>(new ApproximateVector2Comparer());
         for (int i = 0; i < a.Count; ++i) {
-            aVertices.Add(a[i], i);
+            aVertices[a[i]] = i;
         }
 
         // Check b for vertices shared with a
