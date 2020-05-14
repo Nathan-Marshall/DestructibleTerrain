@@ -368,6 +368,8 @@ MonoBehaviour:
   surfaceSampleDistance: 0.2
   minimumCaveDepth: 4
   minContourPoints: 30
+  curveSmoothingFactor: 1
+  curveNumSamples: 4
   population: 0.54
   smoothIterations: 20
   seed: test

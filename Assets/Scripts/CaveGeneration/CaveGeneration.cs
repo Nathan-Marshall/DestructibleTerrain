@@ -2,6 +2,7 @@
 using DestructibleTerrain.Destructible;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
 using UnityEditor.PackageManager.UI;
@@ -19,6 +20,8 @@ public class CaveGeneration : MonoBehaviour
     public float surfaceSampleDistance = 0.2f;
     public int minimumCaveDepth = 4;
     public int minContourPoints = 30;
+    public float curveSmoothingFactor = 1.0f;
+    public int curveNumSamples = 4;
 
     public float population = 0.54f;
     public int smoothIterations = 20;
@@ -40,13 +43,13 @@ public class CaveGeneration : MonoBehaviour
         GenerateSurfaceHeights(sampleStart);
         GeneratePixelGrid();
 
-        CreatePixelRenderMesh();
+        //CreatePixelRenderMesh();
 
         // Detect contours
         ComputeIntersectionGrid();
         DetectContours(out List<List<Vector2>> solidContours, out List<List<Vector2>> holeContours);
 
-        holeContours = PruneHoles(solidContours, holeContours);
+        holeContours = PruneHoles(solidContours, holeContours).Select(SmoothPolygon).ToList();
         List<Vector2> realOuterContour = ComputeOuterContour(sampleStart);
 
         // Construct main terrain object
@@ -58,7 +61,7 @@ public class CaveGeneration : MonoBehaviour
 
         // Construct additional terrain objects
         for (int i = 1; i < solidContours.Count; i++) {
-            DTPolygon poly = new DTPolygon(solidContours[i]);
+            DTPolygon poly = new DTPolygon(SmoothPolygon(solidContours[i]));
             DestructibleObject dtObj = new GameObject().AddComponent<DO_Polygon_Clip_Collide>();
             dtObj.ApplyPolygonList(new List<DTPolygon> { poly });
             dtObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
@@ -475,5 +478,50 @@ public class CaveGeneration : MonoBehaviour
         realOuterContour.Add(new Vector2(0, 0));
 
         return realOuterContour;
+    }
+
+    class CubicCurve
+    {
+        public readonly Vector2 start, cp0, cp1, end;
+
+        public CubicCurve(Vector2 prev, Vector2 start, Vector2 end, Vector2 next, float curveSmoothingFactor) {
+            this.start = start;
+            cp0 = start + (end - prev) * 0.25f * curveSmoothingFactor;
+            cp1 = end - (next - start) * 0.25f * curveSmoothingFactor;
+            this.end = end;
+        }
+
+        public Vector2 GetPoint(float t) {
+            float u = 1 - t;
+            Vector2 a = 1 * u * u * u * start;
+            Vector2 b = 3 * u * u * t * cp0;
+            Vector2 c = 3 * u * t * t * cp1;
+            Vector2 d = 1 * t * t * t * end;
+            return a + b + c + d; 
+        }
+
+        public Vector2[] Approximate(int numPoints, bool includeLast) {
+            Vector2[] points = new Vector2[numPoints];
+            for (int i = 0; i < numPoints; i++) {
+                float t = (float)i / (numPoints - (includeLast ? 1 : 0));
+                points[i] = GetPoint(t);
+            }
+            return points;
+        }
+    }
+
+    public List<Vector2> SmoothPolygon(List<Vector2> original) {
+        List<Vector2> smoothed = new List<Vector2>();
+
+        for (int i = 0; i < original.Count; i++) {
+            Vector2 prev = original.GetCircular(i - 1);
+            Vector2 start = original.GetCircular(i);
+            Vector2 end = original.GetCircular(i + 1);
+            Vector2 next = original.GetCircular(i + 2);
+            smoothed.AddRange(new CubicCurve(prev, start, end, next, curveSmoothingFactor).Approximate(
+                curveNumSamples, false));
+        }
+
+        return smoothed;
     }
 }
