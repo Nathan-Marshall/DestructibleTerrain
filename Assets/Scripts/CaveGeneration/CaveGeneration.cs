@@ -12,39 +12,45 @@ using UnityEngine;
 [RequireComponent(typeof(MeshRenderer))]
 public class CaveGeneration : MonoBehaviour
 {
+    // Pixel generation properties
+    public string seed;
     public int width = 150;
-    public int height = 400;
-
+    public int layerHeight = 100;
+    public float population = 0.54f;
+    public int smoothIterations = 20;
     public int maxHillHeight = 12;
     public float perlinXScale = 20.0f;
-    public float surfaceSampleDistance = 0.2f;
     public int minimumCaveDepth = 4;
+    public int truncatedRows = 3;
+
+    // Contour properties
     public int minContourPoints = 30;
     public float curveSmoothingFactor = 1.0f;
     public int curveNumSamples = 4;
+    public float surfaceSampleDistance = 0.2f;
 
-    public float population = 0.54f;
-    public int smoothIterations = 20;
-    public string seed;
-
+    // Private properties
     private System.Random rand;
     private bool[,] grid;
     private int[] surfaceHeights;
     private GridIntersection[,] intersectionGrid;
+    private int layer;
 
     void Start() {
-        Generate();
+        GenerateSurfaceLayer();
     }
 
-    public void Generate() {
+    public void GenerateSurfaceLayer() {
         // Pixel-based cave generation
         InitializeSeed();
+        layer = 0;
         Vector2 sampleStart = new Vector2((float)rand.NextDouble() * 50000, (float)rand.NextDouble() * 50000);
         GenerateSurfaceHeights(sampleStart);
-        GeneratePixelGrid();
+        GeneratePixelSurfaceLayer();
 
-        //CreatePixelRenderMesh();
+        CreatePixelRenderMesh();
 
+        /*
         // Detect contours
         ComputeIntersectionGrid();
         DetectContours(out List<List<Vector2>> solidContours, out List<List<Vector2>> holeContours);
@@ -57,15 +63,17 @@ public class CaveGeneration : MonoBehaviour
         DestructibleObject mainDTObj = new GameObject("Main Terrain Object").AddComponent<DO_Polygon_Clip_Collide>();
         mainDTObj.ApplyPolygonList(new List<DTPolygon> { mainPolygon });
         mainDTObj.GetComponent<Rigidbody2D>().isKinematic = true;
-        mainDTObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
+        mainDTObj.transform.position = new Vector3(-width * 0.5f, -layerHeight, 0);
 
         // Construct additional terrain objects
         for (int i = 1; i < solidContours.Count; i++) {
             DTPolygon poly = new DTPolygon(SmoothPolygon(solidContours[i]));
             DestructibleObject dtObj = new GameObject("Terrain Object").AddComponent<DO_Polygon_Clip_Collide>();
             dtObj.ApplyPolygonList(new List<DTPolygon> { poly });
-            dtObj.transform.position = new Vector3(-width * 0.5f, -height, 0);
+            dtObj.transform.position = new Vector3(-width * 0.5f, -layerHeight, 0);
         }
+        */
+        layer++;
     }
 
     // Initialize random seed
@@ -85,15 +93,15 @@ public class CaveGeneration : MonoBehaviour
     private void GenerateSurfaceHeights(Vector2 sampleStart) {
         surfaceHeights = new int[width];
         for (int c = 0; c < width; c++) {
-            surfaceHeights[c] = height - Mathf.Clamp((int)(Mathf.PerlinNoise(sampleStart.x + c / perlinXScale, sampleStart.y) * (maxHillHeight + 1)), 0, maxHillHeight);
+            surfaceHeights[c] = layerHeight - Mathf.Clamp((int)(Mathf.PerlinNoise(sampleStart.x + c / perlinXScale, sampleStart.y) * (maxHillHeight + 1)), 0, maxHillHeight);
         }
     }
 
-    private void GeneratePixelGrid() {
-        // Create grid with random tiles based on the population probability
-        grid = new bool[width, height];
+    private void GeneratePixelSurfaceLayer() {
+        // Create grid with random tiles based on the population probability, but keep hills of surface intact
+        grid = new bool[width, layerHeight + truncatedRows];
         for (int c = 0; c < width; c++) {
-            for (int r = 0; r < height; r++) {
+            for (int r = 0; r < layerHeight + truncatedRows; r++) {
                 if (IsGuaranteedTrue(c, r)) {
                     grid[c, r] = true;
                 }
@@ -106,16 +114,44 @@ public class CaveGeneration : MonoBehaviour
             }
         }
 
+        Smooth();
+        TruncateGrid();
+    }
+
+    private void GeneratePixelUndergroundLayer() {
+        bool[] lastRow = new bool[width];
+        for (int c = 0; c < width; c++) {
+            lastRow[c] = grid[c, 0];
+        }
+
+        // Create grid with random tiles based on the population probability, but carry over a row from the previous layer
+        grid = new bool[width, layerHeight + truncatedRows + 1];
+        for (int c = 0; c < width; c++) {
+            for (int r = 0; r < layerHeight + truncatedRows + 1; r++) {
+                if (r == layerHeight + truncatedRows) {
+                    grid[c, r] = lastRow[c];
+                }
+                else if (r == 0 || r == width - 1) {
+                    grid[c, r] = true;
+                }
+                else {
+                    grid[c, r] = rand.NextDouble() < population;
+                }
+            }
+        }
+
+        Smooth();
+        TruncateGrid();
+    }
+
+    private void Smooth() {
         for (int iteration = 0; iteration < smoothIterations; iteration++) {
-            bool[,] newGrid = new bool[width, height];
+            bool[,] newGrid = new bool[width, grid.GetLength(1)];
             for (int c = 0; c < width; c++) {
-                for (int r = 0; r < height; r++) {
+                for (int r = 0; r < grid.GetLength(1); r++) {
                     int neighbours = CountNeighbours(c, r);
-                    if (IsGuaranteedTrue(c, r)) {
-                        newGrid[c, r] = true;
-                    }
-                    else if (IsGuaranteedFalse(c, r)) {
-                        newGrid[c, r] = false;
+                    if (KeepExistingCell(c, r)) {
+                        newGrid[c, r] = grid[c, r];
                     }
                     else if (neighbours > 4) {
                         newGrid[c, r] = true;
@@ -136,9 +172,14 @@ public class CaveGeneration : MonoBehaviour
         do {
             removedCount = 0;
 
-            bool[,] newGrid = new bool[width, height];
+            bool[,] newGrid = new bool[width, grid.GetLength(1)];
             for (int c = 0; c < width; c++) {
-                for (int r = 0; r < height; r++) {
+                for (int r = 0; r < grid.GetLength(1); r++) {
+                    if (KeepExistingCell(c, r)) {
+                        newGrid[c, r] = grid[c, r];
+                        continue;
+                    }
+
                     newGrid[c, r] = SolidWithCardinalNeighbour(c, r);
                     if (grid[c, r] != newGrid[c, r]) {
                         removedCount++;
@@ -148,35 +189,14 @@ public class CaveGeneration : MonoBehaviour
             grid = newGrid;
 
         } while (removedCount > 0);
-
-        // Final pass to remove lone pixels. We can modify the grid directly and don't need to check guaranteed pixels for this pass.
-        for (int c = 0; c < width; c++) {
-            for (int r = 0; r < height; r++) {
-                int neighbours = CountNeighbours(c, r);
-                if (neighbours == 8) {
-                    grid[c, r] = true;
-                }
-                else if (neighbours == 0) {
-                    grid[c, r] = false;
-                }
-            }
-        }
     }
 
     private bool InGridBounds(int c, int r) {
-        return c >= 0 && c < width && r >= 0 && r < height;
-    }
-
-    private bool IntersectionInBounds(int c, int r) {
-        return c >= 0 && c <= width && r >= 0 && r <= height;
+        return c >= 0 && c < width && r >= 0 && r < grid.GetLength(1);
     }
 
     private bool GetCell(int c, int r) {
         return InGridBounds(c, r) && grid[c, r];
-    }
-
-    private GridIntersection GetIntersection(int c, int r) {
-        return IntersectionInBounds(c, r) ? intersectionGrid[c, r] : null;
     }
 
     private int CountNeighbours(int centerCol, int centerRow) {
@@ -192,28 +212,46 @@ public class CaveGeneration : MonoBehaviour
     }
 
     private bool IsGuaranteedTrue(int c, int r) {
-        return (c == 0 || c == width - 1 || r == 0 || r >= surfaceHeights[c] - minimumCaveDepth) && r < surfaceHeights[c];
+        bool bottomEdge = r == 0;
+        bool topEdge = layer == 0 && r >= surfaceHeights[c] + truncatedRows - minimumCaveDepth && r < surfaceHeights[c] + truncatedRows;
+        bool sideEdge = (c == 0 || c == width - 1) && r < surfaceHeights[c] + truncatedRows;
+
+        return bottomEdge || topEdge || sideEdge;
     }
 
     private bool IsGuaranteedFalse(int c, int r) {
-        return r >= surfaceHeights[c];
+        return layer == 0 && r >= surfaceHeights[c] + truncatedRows;
+    }
+
+    private bool KeepExistingCell(int c, int r) {
+        return IsGuaranteedTrue(c, r) || IsGuaranteedFalse(c, r) || r == grid.GetLength(1) - 1;
     }
 
     private bool SolidWithCardinalNeighbour(int c, int r) {
         return GetCell(c, r) && (GetCell(c - 1, r) || GetCell(c + 1, r) || GetCell(c, r - 1) || GetCell(c, r + 1));
     }
 
+    private void TruncateGrid() {
+        bool[,] newGrid = new bool[width, layerHeight];
+        for (int c = 0; c < width; c++) {
+            for (int r = 0; r < layerHeight; r++) {
+                newGrid[c, r] = grid[c, r + truncatedRows];
+            }
+        }
+        grid = newGrid;
+    }
+
     private void CreatePixelRenderMesh() {
-        Vector3[] vertices = new Vector3[(width + 1) * (height + 1)];
+        Vector3[] vertices = new Vector3[(width + 1) * (layerHeight + 1)];
         for (int c = 0; c <= width; c++) {
-            for (int r = 0; r <= height; r++) {
-                vertices[c + r * (width + 1)] = new Vector3(c - width * 0.5f, r - height, 0);
+            for (int r = 0; r <= layerHeight; r++) {
+                vertices[c + r * (width + 1)] = new Vector3(c - width * 0.5f, r - layerHeight, 0);
             }
         }
 
         List<int> triangles = new List<int>();
         for (int c = 0; c < width; c++) {
-            for (int r = 0; r < height; r++) {
+            for (int r = 0; r < layerHeight; r++) {
                 if (grid[c, r]) {
                     int bottomLeft = c + r * (width + 1);
                     int bottomRight = bottomLeft + 1;
@@ -272,6 +310,14 @@ public class CaveGeneration : MonoBehaviour
         // and the corner position
         public Dictionary<GridIntersection, WalkInfo> contourWalkMap;
     };
+
+    private bool IntersectionInBounds(int c, int r) {
+        return c >= 0 && c <= width && r >= 0 && r <= grid.GetLength(1);
+    }
+
+    private GridIntersection GetIntersection(int c, int r) {
+        return IntersectionInBounds(c, r) ? intersectionGrid[c, r] : null;
+    }
 
     private void InitGridIntersection(int col, int row) {
         GridIntersection intersection = intersectionGrid[col, row];
@@ -369,16 +415,16 @@ public class CaveGeneration : MonoBehaviour
     }
 
     private void ComputeIntersectionGrid() {
-        intersectionGrid = new GridIntersection[width + 1, height + 1];
+        intersectionGrid = new GridIntersection[width + 1, layerHeight + 1];
 
         for (int c = 0; c <= width; c++) {
-            for (int r = 0; r <= height; r++) {
+            for (int r = 0; r <= layerHeight; r++) {
                 intersectionGrid[c, r] = new GridIntersection();
             }
         }
 
         for (int c = 0; c <= width; c++) {
-            for (int r = 0; r <= height; r++) {
+            for (int r = 0; r <= layerHeight; r++) {
                 InitGridIntersection(c, r);
             }
         }
@@ -390,7 +436,7 @@ public class CaveGeneration : MonoBehaviour
 
         // Begin checking each intersection for remaining contours to walk
         for (int c = 0; c <= width; c++) {
-            for (int r = 0; r <= height; r++) {
+            for (int r = 0; r <= layerHeight; r++) {
                 GridIntersection start = intersectionGrid[c, r];
 
                 // Exhaust all contours that include this intersection
@@ -463,12 +509,12 @@ public class CaveGeneration : MonoBehaviour
         // noise at a higher frequency and then add the bottom left and right corners.
         List<Vector2> realOuterContour = new List<Vector2>();
         for (float x = 0; x < width; x += surfaceSampleDistance) {
-            float y = height - Mathf.PerlinNoise(sampleStart.x + x / perlinXScale, sampleStart.y) * maxHillHeight;
+            float y = layerHeight - Mathf.PerlinNoise(sampleStart.x + x / perlinXScale, sampleStart.y) * maxHillHeight;
             realOuterContour.Add(new Vector2(x, y));
         }
 
         // Top right corner
-        float lastY = height - Mathf.PerlinNoise(sampleStart.x + width / perlinXScale, sampleStart.y) * maxHillHeight;
+        float lastY = layerHeight - Mathf.PerlinNoise(sampleStart.x + width / perlinXScale, sampleStart.y) * maxHillHeight;
         realOuterContour.Add(new Vector2(width, lastY));
 
         // Bottom right corner
